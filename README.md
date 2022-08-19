@@ -8,6 +8,7 @@
 A platform where a user can upload blogs, quotes, and excerpts to share with the public. Other users can upvote, downvote, like and add comments to the post. Users can also report the post to the admin if it is not appropriate. The admin reviewing the complaint reports can also delete the post if it is not appropriate.
 
 <br>
+
 ## Optional Requirements:  
  - Email Subscription/ Live Notifications (using sockets.io i.e., broadcast message)
   - Enable User Login via social login i.e. Google, Facebook (Django REST OAuth)
