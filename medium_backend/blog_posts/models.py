@@ -16,3 +16,16 @@ class Post(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+class Tag(models.Model):
+    name = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.name
+
+class AssignedTag(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='posts')
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name='assigned_tags')
+
+    def __str__(self):
+        return f'{self.post.title} - {self.tag.name}'

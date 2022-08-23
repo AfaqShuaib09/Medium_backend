@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
-from blog_posts.models import Post
+from blog_posts.models import Post, Tag, AssignedTag
 
-class PostSerializer(serializers.ModelSerializer):
+class PostSerializer(serializers.ModelSerializer): 
     class Meta:
         model = Post
         fields = ['id', 'title', 'image', 'content', 'posted_by', 'created_at', 'updated_at']
@@ -15,7 +15,6 @@ class PostSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         ''' Overrides the default representation of a model instance. '''
         representation = super().to_representation(instance)
-        # representation['posted_by'] = instance.posted_by.username
         representation['posted_by'] = {
             'id': instance.posted_by.id,
             'username': instance.posted_by.username,
