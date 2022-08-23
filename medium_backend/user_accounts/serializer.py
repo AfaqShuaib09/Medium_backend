@@ -45,6 +45,8 @@ class UserSerializer(serializers.ModelSerializer):
     """
     Serializes the data of a user.
     """
+    #posts = serializers.StringRelatedField(many=True, read_only=True)
+    #posts = serializers.HyperlinkedRelatedField(many=True, read_only=True, view_name='post-detail')
     class Meta:
         """
         Meta subclass to define fields.
@@ -61,3 +63,31 @@ class ChangePasswordSerializer(serializers.Serializer):
     model = User
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializes the data of a profile.
+    """
+    user = UserSerializer()
+
+    class Meta:
+        """
+        Meta subclass to define fields.
+        """
+        model = Profile
+        fields = ['user', 'full_name', 'cnic', 'contact_number', 'address', 'gender', 'country', 'profile_pic', 'bio']
+        read_only_fields = ('user',)
+
+
+class UpdateProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer to update a profile.
+    """
+    class Meta:
+        """
+        Meta subclass to define fields.
+        """
+        model = Profile
+        fields = ['full_name', 'cnic', 'contact_number', 'address', 'gender', 'country']
+        read_only_fields = ('user',)

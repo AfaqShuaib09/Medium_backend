@@ -1,12 +1,13 @@
 ''' Models related to user accounts '''
 from email.policy import default
-from wsgiref.validate import validator
-from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
 from django_countries.fields import CountryField
 
-from user_accounts.constant import (CNIC_VALIDATOR, CONTACT_NO_VALIDATOR, GENDER_CHOICES)
+from user_accounts.constant import (CNIC_VALIDATOR, CONTACT_NO_VALIDATOR,
+                                    GENDER_CHOICES)
 from user_accounts.validators import validate_file_extension
+
 
 # Create your models here.
 class Profile(models.Model):
@@ -32,7 +33,7 @@ class Profile(models.Model):
                                         blank=True
                                     )
     address = models.TextField(help_text='your address', blank=True)
-    country = CountryField(blank_label='(select country)', help_text='your country', blank=True)
+    country = CountryField(blank_label='(select country)', help_text='your country', blank=True, default='PK')
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES, default='', blank=True)
     bio = models.TextField(help_text='your bio', blank=True)
     profile_pic = models.ImageField(upload_to=nameFile, blank=True, validators = [validate_file_extension])

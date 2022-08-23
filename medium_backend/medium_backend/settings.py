@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -42,8 +43,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_rest_passwordreset',
+    'drf_yasg',
     'knox',
     'user_accounts',
+    'blog_posts',
 ]
 
 MIDDLEWARE = [
@@ -134,5 +137,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
    'DEFAULT_AUTHENTICATION_CLASSES': (
          'knox.auth.TokenAuthentication',
-   )
+   ),
+}
+
+REST_KNOX = {
+       'TOKEN_TTL': timedelta(hours=2),  # default time 2h
 }

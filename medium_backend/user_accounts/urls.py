@@ -3,13 +3,15 @@ from django.urls import include, path
 from knox import views as knox_views
 from rest_framework.routers import DefaultRouter
 
-from user_accounts.views import (RegisterViewSet, LoginViewSet, UserViewSet, ChangePasswordViewSet)
+from user_accounts.views import (ChangePasswordViewSet, LoginViewSet,
+                                 RegisterViewSet, UserViewSet, ProfileViewSet)
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='users')
 router.register(r'register', RegisterViewSet, basename='register')
 router.register(r'login', LoginViewSet, basename='login')
 router.register(r'change-password', ChangePasswordViewSet, basename='change-password')
+router.register(r'profile', ProfileViewSet, basename='profile')
 
 urlpatterns = [
     path('', include(router.urls)),
