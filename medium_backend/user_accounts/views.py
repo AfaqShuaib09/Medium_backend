@@ -1,5 +1,4 @@
-from email.policy import default
-import profile
+import re
 from django.contrib.auth.models import User
 from knox.models import AuthToken
 from rest_framework import generics, mixins, status, viewsets
@@ -10,8 +9,9 @@ from rest_framework.response import Response
 from user_accounts.models import Profile
 from user_accounts.permissions import IsOwnerOrReadOnly, IsNonAuthenticated
 from user_accounts.serializer import (ChangePasswordSerializer,
-                                      ProfileSerializer, RegisterSerializer,
-                                      UpdateProfileSerializer, UserSerializer)
+                                        ProfileSerializer, RegisterSerializer,
+                                        UserSerializer)
+from user_accounts.constant import CONTACT_NO_REGEX, CNIC_REGEX
 
 
 # Create your views here.
@@ -99,6 +99,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     lookup_field = 'user__username'
+    http_method_names = ['get', 'post', 'patch', 'delete']
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
     def create(self, request, *args, **kwargs):
@@ -111,6 +112,15 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 return Response({"message": "Profile already exists"}, status=status.HTTP_400_BAD_REQUEST)
         except:
             return Response({'message': 'User not found'}, status=404)
+
+        if request.data.get('cnic'):
+            if not re.match(CNIC_REGEX, request.data['cnic']) and not request.data.get('cnic') == '':
+                return Response({'message': 'Invalid CNIC'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.data.get('contact_no'):
+            if ( not re.match(CONTACT_NO_REGEX, request.data['contact_no'])
+                and not request.data.get('contact_no') == ''):
+                return Response({'message': 'Invalid Contact No'}, status=status.HTTP_400_BAD_REQUEST)
 
         user_profile = Profile.objects.create(user=user,
                             full_name=request.data.get('full_name', ''),
@@ -127,9 +137,13 @@ class ProfileViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-
-    def get_serializer_class(self):
+    def update(self, request, *args, **kwargs):
         """
-        Returns the serializer class for the viewset
+        Update an existing profile associated with the user.
         """
-        return UpdateProfileSerializer if self.action == 'update' else self.serializer_class
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = ProfileSerializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

@@ -2,10 +2,14 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from blog_posts.views import PostViewSet
+from blog_posts.views import PostViewSet, CommentViewSet, PostCommentViewSet, ReportPostViewSet, ReviewReportViewSet
 
 router = DefaultRouter()
 router.register(r'posts', PostViewSet, basename='post')
+router.register(r'comment', CommentViewSet, basename='comment')
+router.register(r'post_comment', PostCommentViewSet , basename='comment')
+router.register(r'reports', ReportPostViewSet, basename='report')
+router.register(r'review_reports', ReviewReportViewSet, basename='review_report')
 
 urlpatterns = [
     path('', include(router.urls)),

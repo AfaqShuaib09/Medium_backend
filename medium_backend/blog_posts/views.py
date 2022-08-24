@@ -1,13 +1,12 @@
-from cgitb import lookup
-from turtle import title
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import viewsets, status
+from django.db import IntegrityError
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework import viewsets, status, mixins, generics
 from rest_framework.response import Response
 
-from blog_posts.models import Post, Tag, AssignedTag
-from blog_posts.serializer import PostSerializer
+from blog_posts.models import Post, Tag, AssignedTag, Comment, Report
+from blog_posts.serializer import PostSerializer, CommentSerializer, ReportSerializer
 from blog_posts.constant import POST_REQ_FIELDS
-from blog_posts.permissions import PostOwnerOrReadOnly
+from blog_posts.permissions import PostOwnerOrReadOnly, CommentOwnerOrReadOnly
 
 
 # Create your views here.
@@ -17,20 +16,19 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated, PostOwnerOrReadOnly]
     lookup_field = 'pk'
-    
+
     def create(self, request, *args, **kwargs):
         ''' Create a new post associated with the user. '''
         # if some field is missing, return error
         for field in POST_REQ_FIELDS:
             if field not in request.data:
                 return Response({field: 'This field is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.data.get('tags'):
+            request.data['tags'] = request.data['tags'].split(',')
+            for tag in request.data['tags']:
+                if not Tag.objects.filter(name=tag).exists():
+                    Tag.objects.create(name=tag)
 
-        request.data['tags'] = request.data['tags'].split(',')
-        for tag in request.data['tags']:
-            if not Tag.objects.filter(name=tag).exists():
-                Tag.objects.create(name=tag)
-                # assign tag to post
-        
         post = Post.objects.create(
             posted_by = request.user,
             title = request.data.get('title', ''),
@@ -38,9 +36,81 @@ class PostViewSet(viewsets.ModelViewSet):
             content = request.data.get('content', ''),
         )
         post.save()
-
-        for tag in request.data['tags']:
-            tag = Tag.objects.get(name=tag)
-            AssignedTag.objects.create(post=post, tag=tag)
+        if request.data.get('tags'):
+            for tag in request.data['tags']:
+                AssignedTag.objects.create(post=post, tag=Tag.objects.get(name=tag))
 
         return Response(PostSerializer(post).data, status=status.HTTP_201_CREATED)
+
+class CommentViewSet(viewsets.ModelViewSet):
+    """
+    This viewset automatically provides list and detail, create, update actions for Comment Model.
+    """
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+
+    def perform_create(self, serializer):
+        """
+        Saves the comment of the currently logged user.
+        """
+        serializer.save(owner=self.request.user)
+
+
+class PostCommentViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    """
+    This viewset list all the comments of the post
+    """
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the comments
+        for the post of the current user.
+        """
+        queryset = Comment.objects.all()
+        post_id = self.request.query_params.get('post', None)
+        if post_id:
+            queryset = queryset.filter(post__id=int(post_id), parent = None)
+        return queryset
+
+
+class ReportPostViewSet(viewsets.ModelViewSet):
+    """
+    Viewset providing all create, list, update and detail actions for Report Model.
+    """
+    queryset = Report.objects.all()
+    serializer_class = ReportSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except IntegrityError:
+            content = {'error': 'IntegrityError: Already reported by the user.'}
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+    def perform_create(self, serializer):
+        """
+        Saves the report of the currently logged user.
+        """
+        serializer.save(reported_by=self.request.user)
+
+
+class ReviewReportViewSet(viewsets.GenericViewSet, mixins.UpdateModelMixin):
+    """ Allow admin to review the report """
+    queryset = Report.objects.all()
+    serializer_class = ReportSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    lookup_field = 'id'
+
+    def update(self, request, *args, **kwargs):
+        """ update the post report status """
+        instance = self.get_object()
+        instance.status = request.data.get('status', instance.status)
+        instance.save()
+        return Response(instance.status, status=status.HTTP_200_OK)

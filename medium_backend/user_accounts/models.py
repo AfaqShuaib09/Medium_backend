@@ -15,7 +15,7 @@ class Profile(models.Model):
 
     def nameFile(instance, filename):
         ''' uploads the profile picture to the username folder inside media folder'''
-        return '/'.join(['images', str(instance.name), filename])
+        return '/'.join(['images', str(instance.full_name), filename])
     
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     full_name = models.CharField(max_length=100,
