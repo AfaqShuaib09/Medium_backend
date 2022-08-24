@@ -67,7 +67,7 @@ class CommentSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer): 
     class Meta:
         model = Post
-        fields = ['id', 'title', 'image', 'content', 'posted_by', 'created_at', 'updated_at']
+        fields = ['id', 'title', 'image', 'content', 'posted_by', 'assigned_tags' ,'created_at', 'updated_at']
         read_only_fields = ('posted_by',)
         extra_kwargs = {
             'created_at': {'read_only': True},
@@ -82,6 +82,10 @@ class PostSerializer(serializers.ModelSerializer):
             'username': instance.posted_by.username,
             'email': instance.posted_by.email,
         }
+        print(instance.assigned_tags.all())
+        representation['assigned_tags'] = [
+            {'id': tag.tag.id, 'name': tag.tag.name} for tag in instance.assigned_tags.all()
+        ]
         return representation
     
 

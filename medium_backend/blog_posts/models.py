@@ -87,3 +87,18 @@ class Report(models.Model):
         Meta class for unique_together relationship.
         """
         unique_together = ('post', 'reported_by')
+
+class vote(models.Model):
+    """  Model to save data of Votes on Blog Posts. """
+    u_vote = models.BooleanField(default=False)
+    user = models.ForeignKey(User, related_name='user_votes', on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, related_name='post_votes', on_delete=models.CASCADE)
+
+    class Meta:
+        """
+        Meta class for unique_together relationship.
+        """
+        unique_together = ('user', 'post')
+
+    def __str__(self):
+        return f'vote: {self.user.username} - {self.post.title}'

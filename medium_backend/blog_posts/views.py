@@ -41,6 +41,32 @@ class PostViewSet(viewsets.ModelViewSet):
                 AssignedTag.objects.create(post=post, tag=Tag.objects.get(name=tag))
 
         return Response(PostSerializer(post).data, status=status.HTTP_201_CREATED)
+    
+    def update(self, request, *args, **kwargs):
+        """ Allow to update only the content of a comment. """
+        if request.data.get('tags'):
+            removed_tags = []
+            tags = request.data['tags'].split(',')
+            for tag in tags:
+                if not Tag.objects.filter(name=tag).exists():
+                    Tag.objects.create(name=tag)
+            print(self.get_object().assigned_tags.all())
+            for tag in self.get_object().assigned_tags.all():
+                print(tag.tag.name)
+                if tag.tag.name not in tags:
+                    removed_tags.append(tag.tag.name)
+            # remove all tags that are in removed_tags from assigned_tags
+            for tag in removed_tags:
+                self.get_object().assigned_tags.get(tag=Tag.objects.get(name=tag), post=self.get_object()).delete()
+            # add all tags that are not in assigned_tags from tags
+            for tag in tags:
+                if not self.get_object().assigned_tags.filter(tag=Tag.objects.get(name=tag),
+                                                                post=self.get_object()).exists():
+                    AssignedTag.objects.create(post=self.get_object(), tag=Tag.objects.get(name=tag))
+        if request.data.get('tags') == '':
+            for tag in self.get_object().assigned_tags.all():
+                tag.delete()
+        return super().update(request, *args, **kwargs)
 
 class CommentViewSet(viewsets.ModelViewSet):
     """

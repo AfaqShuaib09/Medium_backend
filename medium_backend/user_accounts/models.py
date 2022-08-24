@@ -37,7 +37,7 @@ class Profile(models.Model):
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES, default='', blank=True)
     bio = models.TextField(help_text='your bio', blank=True)
     profile_pic = models.ImageField(upload_to=nameFile, blank=True, validators = [validate_file_extension])
-    
+
     def __str__(self):
         ''' Overrides the str method to return the name of the user '''
         return f'{self.user.username} Profile'
