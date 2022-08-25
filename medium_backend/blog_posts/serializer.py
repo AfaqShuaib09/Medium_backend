@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.fields import SerializerMethodField
 
-from blog_posts.models import Post, Tag, AssignedTag, Comment, Report
+from blog_posts.models import Post, Tag, AssignedTag, Comment, Report, Vote
 from user_accounts.serializer import UserSerializer
 
 
@@ -67,7 +67,7 @@ class CommentSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer): 
     class Meta:
         model = Post
-        fields = ['id', 'title', 'image', 'content', 'posted_by', 'assigned_tags' ,'created_at', 'updated_at']
+        fields = ['id', 'title', 'image', 'content', 'posted_by', 'assigned_tags', 'total_votes' ,'created_at', 'updated_at']
         read_only_fields = ('posted_by',)
         extra_kwargs = {
             'created_at': {'read_only': True},
@@ -120,3 +120,32 @@ class ReportSerializer(serializers.ModelSerializer):
         instance.status = validated_data.get('status', instance.status)
         instance.save()
         return instance
+
+
+class VoteSerializer(serializers.ModelSerializer):
+    """
+    Serializes the data of Votes on Blog Posts.
+    """
+    # user = serializers.ReadOnlyField(source='user.username')
+    class Meta:
+        """
+        Meta subclass to define fields.
+        """
+        model = Vote
+        fields = ['url', 'id', 'user', 'post', 'u_vote']
+        read_only_fields = ('user', 'post')
+    
+    def to_representation(self, instance):
+        """
+        Overrides the default representation of a model instance.
+        """
+        representation = super().to_representation(instance)
+        representation['post'] = {
+            'id': instance.post.id,
+            'title': instance.post.title,
+        }
+        representation['user'] = {
+            'id': instance.user.id,
+            'username': instance.user.username,
+        }
+        return representation

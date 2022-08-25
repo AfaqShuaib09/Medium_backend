@@ -1,10 +1,12 @@
+from email import message
 from django.db import IntegrityError
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import viewsets, status, mixins, generics
 from rest_framework.response import Response
+from rest_framework.decorators import action
 
-from blog_posts.models import Post, Tag, AssignedTag, Comment, Report
-from blog_posts.serializer import PostSerializer, CommentSerializer, ReportSerializer
+from blog_posts.models import Post, Tag, AssignedTag, Comment, Report, Vote
+from blog_posts.serializer import PostSerializer, CommentSerializer, ReportSerializer, VoteSerializer
 from blog_posts.constant import POST_REQ_FIELDS
 from blog_posts.permissions import PostOwnerOrReadOnly, CommentOwnerOrReadOnly
 
@@ -50,9 +52,7 @@ class PostViewSet(viewsets.ModelViewSet):
             for tag in tags:
                 if not Tag.objects.filter(name=tag).exists():
                     Tag.objects.create(name=tag)
-            print(self.get_object().assigned_tags.all())
             for tag in self.get_object().assigned_tags.all():
-                print(tag.tag.name)
                 if tag.tag.name not in tags:
                     removed_tags.append(tag.tag.name)
             # remove all tags that are in removed_tags from assigned_tags
@@ -67,6 +67,25 @@ class PostViewSet(viewsets.ModelViewSet):
             for tag in self.get_object().assigned_tags.all():
                 tag.delete()
         return super().update(request, *args, **kwargs)
+    
+    @action(detail=True)
+    def upvote(self, request, *args, **kwargs):
+        """ Upvote the post action. """
+        post = self.get_object()
+        return Response(post.upvote(request.user))
+
+    @action(detail=True)
+    def downvote(self, request, *args, **kwargs):
+        """ Downvote the post action """
+        post = self.get_object()
+        return Response(post.downvote(request.user))
+    
+    @action(detail=True)
+    def unvote(self, request, *args, **kwargs):
+        """ Fires Unvote Action """
+        post = self.get_object()
+        return Response(post.unvote(request.user))
+
 
 class CommentViewSet(viewsets.ModelViewSet):
     """
@@ -140,3 +159,25 @@ class ReviewReportViewSet(viewsets.GenericViewSet, mixins.UpdateModelMixin):
         instance.status = request.data.get('status', instance.status)
         instance.save()
         return Response(instance.status, status=status.HTTP_200_OK)
+
+
+class VotePostViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    """ Allow user to vote on the post """
+    queryset = Vote.objects.all()
+    serializer_class = VoteSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get']
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the votes for the post passed in the query params.
+        """
+        queryset = Vote.objects.all()
+        post_id = self.request.query_params.get('post', None)
+        if post_id:
+            queryset = queryset.filter(post=int(post_id))
+        return queryset
+    
+    def retrieve(self, request, *args, **kwargs):
+        """ Block the retrieve action """
+        return Response({"message" :"Method Not Allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)

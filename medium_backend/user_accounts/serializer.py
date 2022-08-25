@@ -45,8 +45,6 @@ class UserSerializer(serializers.ModelSerializer):
     """
     Serializes the data of a user.
     """
-    #posts = serializers.StringRelatedField(many=True, read_only=True)
-    #posts = serializers.HyperlinkedRelatedField(many=True, read_only=True, view_name='post-detail')
     class Meta:
         """
         Meta subclass to define fields.

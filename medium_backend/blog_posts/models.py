@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import Count, Q
 
 from blog_posts.constant import REPORT_CHOICES, STATUS_CHOICES
 
@@ -20,6 +21,52 @@ class Post(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+    @property
+    def total_votes(self):
+        """
+        Calculates sum of votes for a post
+        """
+        return Post.objects.aggregate(
+            votes=Count(
+                'post_votes', filter=(Q(post_votes__post=self))
+            )
+        )
+    
+    def upvote(self, user):
+        """
+        Performs Upvote.
+        """
+        vote, created = self.post_votes.get_or_create(user=user, post=self)
+        if not created and vote.u_vote == True:
+            return 'Already up voted this post'
+
+        vote.u_vote = True
+        vote.save()
+        return 'Successfully up voted this post'
+
+    def downvote(self, user):
+        """
+        Performs Downvote
+        """
+        vote, created = self.post_votes.get_or_create(user=user, post=self)
+        if not created and not vote.u_vote:
+            return 'Already down voted this post'
+
+        vote.u_vote = False
+        vote.save()
+        return 'Successfully down voted this post'
+    
+    def unvote(self, user):
+        """
+        Performs Unvote
+        """
+        vote, created = self.post_votes.get_or_create(user=user, post=self)
+        if not created:
+            vote.delete()
+            return 'Successfully unvoted this post'
+        return 'You have not voted this post'
+
 
 class Tag(models.Model):
     """ Tags Model """
@@ -88,8 +135,8 @@ class Report(models.Model):
         """
         unique_together = ('post', 'reported_by')
 
-class vote(models.Model):
-    """  Model to save data of Votes on Blog Posts. """
+class Vote(models.Model):
+    """ Model to save data of Votes on Blog Posts. """
     u_vote = models.BooleanField(default=False)
     user = models.ForeignKey(User, related_name='user_votes', on_delete=models.CASCADE)
     post = models.ForeignKey(Post, related_name='post_votes', on_delete=models.CASCADE)
