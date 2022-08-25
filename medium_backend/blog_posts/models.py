@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models import Count, Q
 
 from blog_posts.constant import REPORT_CHOICES, STATUS_CHOICES
+from django.db.models.signals import post_save, post_init
 
 # Create your models here.
 class Post(models.Model):
@@ -134,6 +135,7 @@ class Report(models.Model):
         Meta class for unique_together relationship.
         """
         unique_together = ('post', 'reported_by')
+
 
 class Vote(models.Model):
     """ Model to save data of Votes on Blog Posts. """

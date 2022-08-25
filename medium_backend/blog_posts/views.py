@@ -138,6 +138,12 @@ class ReportPostViewSet(viewsets.ModelViewSet):
         except IntegrityError:
             content = {'error': 'IntegrityError: Already reported by the user.'}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get_queryset(self):
+        """ if user is admin, return all the reports else return only the reports of the user """
+        if self.request.user.is_superuser:
+            return super().get_queryset().all()
+        return super().get_queryset().filter(reported_by=self.request.user)
 
     def perform_create(self, serializer):
         """
@@ -157,6 +163,9 @@ class ReviewReportViewSet(viewsets.GenericViewSet, mixins.UpdateModelMixin):
         """ update the post report status """
         instance = self.get_object()
         instance.status = request.data.get('status', instance.status)
+        if instance.status == 'approved':
+            instance.post.isBlocked = True
+            instance.post.save() 
         instance.save()
         return Response(instance.status, status=status.HTTP_200_OK)
 
