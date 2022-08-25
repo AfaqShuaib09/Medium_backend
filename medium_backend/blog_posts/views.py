@@ -10,6 +10,7 @@ from blog_posts.permissions import (CommentOwnerOrReadOnly,
                                     PostOwnerOrReadOnly, ReportOwnerOrReadOnly)
 from blog_posts.serializer import (CommentSerializer, PostSerializer,
                                    ReportSerializer, VoteSerializer)
+from blog_posts.utils import vaidate_report_status
 
 
 # Create your views here.
@@ -162,6 +163,9 @@ class ReviewReportViewSet(viewsets.GenericViewSet, mixins.UpdateModelMixin):
         """ update the post report status """
         instance = self.get_object()
         instance.status = request.data.get('status', instance.status)
+        if not vaidate_report_status(instance.status):
+            content = {'error': 'Invalid Report status. Not a valid choice.'}
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
         if instance.status == 'approved':
             instance.post.isBlocked = True
             instance.post.save()

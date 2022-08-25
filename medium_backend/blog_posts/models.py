@@ -112,7 +112,7 @@ class Comment(models.Model):
 
 class Report(models.Model):
     """ Model to store complaints/reports on posts. """
-    type = models.CharField(max_length=50, choices=REPORT_CHOICES, default='')
+    type = models.CharField(max_length=50, choices=REPORT_CHOICES, default='spam')
     post = models.ForeignKey(Post, related_name='reports', on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     reported_by = models.ForeignKey(User, related_name='reports', on_delete=models.CASCADE)
