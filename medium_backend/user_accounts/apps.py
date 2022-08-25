@@ -6,4 +6,5 @@ class UserAccountsConfig(AppConfig):
     name = 'user_accounts'
 
     def ready(self):
+        """ Import the signal on startup """
         import user_accounts.signals

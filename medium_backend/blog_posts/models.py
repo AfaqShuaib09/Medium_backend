@@ -1,9 +1,8 @@
-from django.db import models
 from django.contrib.auth.models import User
-from django.db.models import Count, Q
+from django.db import models
 
 from blog_posts.constant import REPORT_CHOICES, STATUS_CHOICES
-from django.db.models.signals import post_save, post_init
+
 
 # Create your models here.
 class Post(models.Model):
@@ -21,22 +20,19 @@ class Post(models.Model):
         return f'{self.title}'
 
     class Meta:
+        """ Meta class defined to set the ordering of the posts """
         ordering = ['-created_at']
 
     @property
     def total_votes(self):
         """
-        Calculates sum of votes for a post
+        Differentiates between upvotes and downvotes
         """
-        return Post.objects.aggregate(
-            votes=Count(
-                'post_votes', filter=(Q(post_votes__post=self))
-            )
-        )
-    
+        return self.post_votes.filter(u_vote=True).count() - self.post_votes.filter(u_vote=False).count()
+
     def upvote(self, user):
         """
-        Performs Upvote.
+        upvote the post
         """
         vote, created = self.post_votes.get_or_create(user=user, post=self)
         if not created and vote.u_vote == True:
@@ -48,7 +44,7 @@ class Post(models.Model):
 
     def downvote(self, user):
         """
-        Performs Downvote
+        downvote the post
         """
         vote, created = self.post_votes.get_or_create(user=user, post=self)
         if not created and not vote.u_vote:
@@ -57,10 +53,10 @@ class Post(models.Model):
         vote.u_vote = False
         vote.save()
         return 'Successfully down voted this post'
-    
+
     def unvote(self, user):
         """
-        Performs Unvote
+        Performs Unvote Action
         """
         vote, created = self.post_votes.get_or_create(user=user, post=self)
         if not created:
@@ -70,14 +66,16 @@ class Post(models.Model):
 
 
 class Tag(models.Model):
-    """ Tags Model """
+    """ Model to store the tags """
     name = models.CharField(max_length=20)
 
     def __str__(self):
         """ display the name of the tag """
         return f'{self.name}'
 
+
 class AssignedTag(models.Model):
+    """ Model to store the tags associated with the post """
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='assigned_tags')
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name='assigned_tags')
 
@@ -86,9 +84,7 @@ class AssignedTag(models.Model):
 
 
 class Comment(models.Model):
-    """
-    Model to save data of Comments on Blog Posts.
-    """
+    """ Model to save data of Comments on Blog Posts."""
     parent = models.ForeignKey('self', blank=True, null=True, related_name='reply', on_delete=models.CASCADE)
     post = models.ForeignKey(Post, related_name='comment', on_delete=models.CASCADE)
     content = models.TextField(max_length=50000)
@@ -110,12 +106,8 @@ class Comment(models.Model):
 
     @property
     def is_parent(self):
-        """
-        Determines if a Comment is a Parent Comment.
-        """
-        if self.parent is not None:
-            return False
-        return True
+        """ Checks whether a Comment is a Parent Comment. """
+        return False if self.parent else True
 
 
 class Report(models.Model):

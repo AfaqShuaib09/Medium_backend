@@ -76,4 +76,3 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['user', 'full_name', 'cnic', 'contact_number', 'address', 'gender', 'country', 'profile_pic', 'bio']
         read_only_fields = ('user',)
-

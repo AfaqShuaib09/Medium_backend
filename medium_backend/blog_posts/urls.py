@@ -2,7 +2,9 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from blog_posts.views import PostViewSet, CommentViewSet, PostCommentViewSet, ReportPostViewSet, ReviewReportViewSet, VotePostViewSet
+from blog_posts.views import (CommentViewSet, PostCommentViewSet, PostViewSet,
+                              ReportPostViewSet, ReviewReportViewSet,
+                              VotePostViewSet)
 
 router = DefaultRouter()
 router.register(r'posts', PostViewSet, basename='post')

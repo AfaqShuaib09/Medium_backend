@@ -1,17 +1,19 @@
 import re
+
 from django.contrib.auth.models import User
 from knox.models import AuthToken
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.authtoken.serializers import AuthTokenSerializer
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from user_accounts.models import Profile
-from user_accounts.permissions import IsOwnerOrReadOnly, IsNonAuthenticated
+from user_accounts.permissions import IsNonAuthenticated, IsOwnerOrReadOnly
 from user_accounts.serializer import (ChangePasswordSerializer,
-                                        ProfileSerializer, RegisterSerializer,
-                                        UserSerializer)
-from user_accounts.constant import CONTACT_NO_REGEX, CNIC_REGEX
+                                      ProfileSerializer, RegisterSerializer,
+                                      UserSerializer)
+from user_accounts.utils import (validate_cnic, validate_contact_number,
+                                 validate_gender)
 
 
 # Create your views here.
@@ -113,14 +115,23 @@ class ProfileViewSet(viewsets.ModelViewSet):
         except:
             return Response({'message': 'User not found'}, status=404)
 
-        if request.data.get('cnic'):
-            if not re.match(CNIC_REGEX, request.data['cnic']) and not request.data.get('cnic') == '':
-                return Response({'message': 'Invalid CNIC'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.user != User.objects.get(username=request.data['username']):
+            return Response({"message": "Creation of other user profile not allowed"})
 
-        if request.data.get('contact_no'):
-            if ( not re.match(CONTACT_NO_REGEX, request.data['contact_no'])
-                and not request.data.get('contact_no') == ''):
-                return Response({'message': 'Invalid Contact No'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.data.get('cnic'):
+            if not validate_cnic(request.data.get('cnic')):
+                return  Response({'message': 'Invalid CNIC Format xxxxx-xxxxxx-x'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+
+        if request.data.get('contact_number'):
+            if not validate_contact_number(request.data.get('contact_number')):
+                return Response({'message': 'Invalid Contact No. (Format +XXXXXXXXXXXX)'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+        if request.data.get('gender'):
+            if not validate_gender(request.data.get('gender')):
+                return Response({'message': 'not a valid choice for gender'},
+                                    status=status.HTTP_400_BAD_REQUEST)
 
         user_profile = Profile.objects.create(user=user,
                             full_name=request.data.get('full_name', ''),

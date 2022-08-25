@@ -1,8 +1,8 @@
 from rest_framework import serializers
 from rest_framework.fields import SerializerMethodField
-
-from blog_posts.models import Post, Tag, AssignedTag, Comment, Report, Vote
 from user_accounts.serializer import UserSerializer
+
+from blog_posts.models import Comment, Post, Report, Vote
 
 
 class ReplySerializer(serializers.ModelSerializer):
@@ -45,13 +45,13 @@ class CommentSerializer(serializers.ModelSerializer):
             ).data
 
         return None
-    
+
     def update(self, instance, validated_data):
         """" Allow to update only the content of a comment. """
         instance.content = validated_data.get('content', instance.content)
         instance.save()
         return instance
-    
+
     def to_representation(self, instance):
         """
         Overrides to_representation method to add extra fields.
@@ -64,10 +64,13 @@ class CommentSerializer(serializers.ModelSerializer):
         return representation
 
 
-class PostSerializer(serializers.ModelSerializer): 
+class PostSerializer(serializers.ModelSerializer):
+    """ Serializes the data of a posts """
     class Meta:
+        """ Meta subclass to define fields. """
         model = Post
-        fields = ['id', 'title', 'image', 'content', 'posted_by', 'assigned_tags', 'total_votes' ,'created_at', 'updated_at']
+        fields = ['id', 'title', 'image', 'content', 'posted_by', 'assigned_tags',
+                    'total_votes' ,'created_at', 'updated_at']
         read_only_fields = ('posted_by',)
         extra_kwargs = {
             'created_at': {'read_only': True},
@@ -90,7 +93,9 @@ class PostSerializer(serializers.ModelSerializer):
     
 
 class ReportSerializer(serializers.ModelSerializer):
+    """ Serializes the data of a reports associated with a post. """
     class Meta:
+        """ Meta subclass to define fields. """
         model = Report
         fields = ['id', 'type', 'post', 'reported_by', 'status', 'created_at', 'updated_at']
         read_only_fields = ('created_at', 'updated_at')
@@ -113,7 +118,7 @@ class ReportSerializer(serializers.ModelSerializer):
             'email': instance.reported_by.email,
         }
         return representation
-    
+
     def update(self, instance, validated_data):
         """ Allow to update only the status and type of a report. """
         instance.type = validated_data.get('type', instance.type)
@@ -124,9 +129,8 @@ class ReportSerializer(serializers.ModelSerializer):
 
 class VoteSerializer(serializers.ModelSerializer):
     """
-    Serializes the data of Votes on Blog Posts.
+    Serializes the data of Votes on Posts.
     """
-    # user = serializers.ReadOnlyField(source='user.username')
     class Meta:
         """
         Meta subclass to define fields.
@@ -134,7 +138,7 @@ class VoteSerializer(serializers.ModelSerializer):
         model = Vote
         fields = ['url', 'id', 'user', 'post', 'u_vote']
         read_only_fields = ('user', 'post')
-    
+
     def to_representation(self, instance):
         """
         Overrides the default representation of a model instance.

@@ -1,11 +1,12 @@
 ''' Signals definition for userApp '''
+from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
 from django_rest_passwordreset.signals import reset_password_token_created
-from django.contrib.auth.models import User
 
 from user_accounts.models import Profile
+
 
 @receiver(reset_password_token_created)
 def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):

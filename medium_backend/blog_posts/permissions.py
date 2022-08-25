@@ -21,3 +21,10 @@ class CommentOwnerOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         """ Checks if the user has the permission."""
         return obj.owner == request.user or request.method in permissions.SAFE_METHODS
+
+class ReportOwnerOrReadOnly(permissions.BasePermission):
+    """ Custom permission to only allow owners of an object to make changes to it. (PUT, PATCH, DELETE) """
+
+    def has_object_permission(self, request, view, obj):
+        """ Checks if the user has the permission."""
+        return obj.reported_by == request.user or request.method in permissions.SAFE_METHODS

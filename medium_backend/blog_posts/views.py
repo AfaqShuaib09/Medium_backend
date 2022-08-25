@@ -1,14 +1,15 @@
-from email import message
 from django.db import IntegrityError
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework import viewsets, status, mixins, generics
-from rest_framework.response import Response
+from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
 
-from blog_posts.models import Post, Tag, AssignedTag, Comment, Report, Vote
-from blog_posts.serializer import PostSerializer, CommentSerializer, ReportSerializer, VoteSerializer
 from blog_posts.constant import POST_REQ_FIELDS
-from blog_posts.permissions import PostOwnerOrReadOnly, CommentOwnerOrReadOnly
+from blog_posts.models import AssignedTag, Comment, Post, Report, Tag, Vote
+from blog_posts.permissions import (CommentOwnerOrReadOnly,
+                                    PostOwnerOrReadOnly, ReportOwnerOrReadOnly)
+from blog_posts.serializer import (CommentSerializer, PostSerializer,
+                                   ReportSerializer, VoteSerializer)
 
 
 # Create your views here.
@@ -93,7 +94,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     """
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CommentOwnerOrReadOnly]
     lookup_field = 'id'
 
     def perform_create(self, serializer):
@@ -104,17 +105,14 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class PostCommentViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
-    """
-    This viewset list all the comments of the post
-    """
+    """ This viewset list all the comments of the post passed in the query params. """
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """
-        This view should return a list of all the comments
-        for the post of the current user.
+        This view should return a list of all the comments of the post.
         """
         queryset = Comment.objects.all()
         post_id = self.request.query_params.get('post', None)
@@ -129,10 +127,11 @@ class ReportPostViewSet(viewsets.ModelViewSet):
     """
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ReportOwnerOrReadOnly]
     lookup_field = 'id'
 
     def create(self, request, *args, **kwargs):
+        """ Override create method to check if the user has already reported the post. """
         try:
             return super().create(request, *args, **kwargs)
         except IntegrityError:
@@ -165,7 +164,7 @@ class ReviewReportViewSet(viewsets.GenericViewSet, mixins.UpdateModelMixin):
         instance.status = request.data.get('status', instance.status)
         if instance.status == 'approved':
             instance.post.isBlocked = True
-            instance.post.save() 
+            instance.post.save()
         instance.save()
         return Response(instance.status, status=status.HTTP_200_OK)
 
@@ -186,7 +185,7 @@ class VotePostViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
         if post_id:
             queryset = queryset.filter(post=int(post_id))
         return queryset
-    
+
     def retrieve(self, request, *args, **kwargs):
         """ Block the retrieve action """
         return Response({"message" :"Method Not Allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)

@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from blog_posts.models import Post, Tag, AssignedTag, Comment, Report, Vote
+from blog_posts.models import AssignedTag, Comment, Post, Report, Tag, Vote
+
 
 # Register your models here.
 class PostAdmin(admin.ModelAdmin):
