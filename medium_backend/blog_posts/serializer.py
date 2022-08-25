@@ -1,3 +1,4 @@
+""" Serializer declaration for blog posts app """
 from rest_framework import serializers
 from rest_framework.fields import SerializerMethodField
 from user_accounts.serializer import UserSerializer

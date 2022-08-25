@@ -1,3 +1,4 @@
+""" Views Definition for the Blog Posts """
 from django.db import IntegrityError
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action

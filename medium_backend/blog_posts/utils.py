@@ -1,4 +1,6 @@
+""" Functions to be used in the views """
 from blog_posts.constant import STATUS_CHOICES
+
 
 def vaidate_report_status(report_status):
     """ Check the validity of report status """

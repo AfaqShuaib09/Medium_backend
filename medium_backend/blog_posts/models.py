@@ -1,3 +1,4 @@
+""" Models declaration for the blog_posts api """
 from django.contrib.auth.models import User
 from django.db import models
 

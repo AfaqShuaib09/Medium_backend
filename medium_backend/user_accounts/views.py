@@ -1,5 +1,3 @@
-import re
-
 from django.contrib.auth.models import User
 from knox.models import AuthToken
 from rest_framework import generics, mixins, status, viewsets
