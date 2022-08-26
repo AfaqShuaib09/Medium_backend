@@ -13,3 +13,4 @@ STATUS_CHOICES = [
     ('approved', 'Approved'),
     ('rejected', 'Rejected'),
 ]
+DEFAULT_POST_SEAERCH_FIELDS = ['posted_by__username','title', 'content', 'assigned_tags__tag__name']

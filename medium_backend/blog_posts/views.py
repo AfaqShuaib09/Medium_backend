@@ -11,13 +11,15 @@ from blog_posts.permissions import (CommentOwnerOrReadOnly,
                                     PostOwnerOrReadOnly, ReportOwnerOrReadOnly)
 from blog_posts.serializer import (CommentSerializer, PostSerializer,
                                    ReportSerializer, VoteSerializer)
-from blog_posts.utils import vaidate_report_status
+from blog_posts.utils import vaidate_report_status, DynamicSearchFilter
+
 
 
 # Create your views here.
 class PostViewSet(viewsets.ModelViewSet):
     ''' API endpoint that allows posts to be viewed, created, updated or deleted. '''
     queryset = Post.objects.all()
+    filter_backends = (DynamicSearchFilter,)
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated, PostOwnerOrReadOnly]
     lookup_field = 'pk'

@@ -86,7 +86,6 @@ class PostSerializer(serializers.ModelSerializer):
             'username': instance.posted_by.username,
             'email': instance.posted_by.email,
         }
-        print(instance.assigned_tags.all())
         representation['assigned_tags'] = [
             {'id': tag.tag.id, 'name': tag.tag.name} for tag in instance.assigned_tags.all()
         ]
