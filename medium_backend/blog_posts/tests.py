@@ -1,12 +1,12 @@
-import email
-from rest_framework.test import APITestCase, APIRequestFactory, APIClient
-from rest_framework import status
 from django.contrib.auth.models import User
 from knox.models import AuthToken
-from user_accounts.tests import RegisterTest
+from rest_framework import status
+from rest_framework.test import APIClient, APIRequestFactory, APITestCase
 
-from blog_posts.models import Post, Tag, AssignedTag, Comment, Report
+from blog_posts.models import AssignedTag, Comment, Post, Report, Tag
 from blog_posts.views import ReviewReportViewSet
+
+
 # Create your tests here.
 class PostTest(APITestCase):
     """ Test module for Post API """
