@@ -31,9 +31,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         Handles the validated data to create a user.
         """
         try:
-            user = User.objects.create_user(
-                validated_data['username'], validated_data['email'], validated_data['password']
-            )
+            user = User.objects.create_user(**validated_data)
+            # user = User.objects.create_user(
+            #     validated_data['username'], validated_data['email'], validated_data['password']
+            # )
             return user
         except KeyError:
             raise (serializers.ValidationError("Required fields are missing 😔"))

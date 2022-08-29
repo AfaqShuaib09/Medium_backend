@@ -15,3 +15,15 @@ def validate_gender(gender):
     """ Validate gender is in gender choices """
     genders = [gender_choice[0] for gender_choice in GENDER_CHOICES]
     return True if gender in genders else False
+
+def validate_email(email):
+    """ Validate email """
+    return False if not re.match(r'[^@]+@[^@]+\.[^@]+', email) and not email == '' else True
+
+def validate_password(password):
+    """ check password length """
+    return False if len(password) < 8 else True
+
+def validate_username(username):
+    """ check django username validation """
+    return False if not re.match(r'^[\w.@+-]+$', username) else True

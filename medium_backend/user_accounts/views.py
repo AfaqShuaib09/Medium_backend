@@ -11,7 +11,7 @@ from user_accounts.serializer import (ChangePasswordSerializer,
                                       ProfileSerializer, RegisterSerializer,
                                       UserSerializer)
 from user_accounts.utils import (validate_cnic, validate_contact_number,
-                                 validate_gender)
+                                 validate_gender, validate_email, validate_password, validate_username)
 
 
 # Create your views here.
@@ -26,12 +26,21 @@ class RegisterViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         """
         Handles the request to register/create a user.
         """
+        if request.data.get('email'):
+            if not validate_email(request.data['email']):
+                return Response({'message': 'Invalid email'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.data.get('username'):
+            if not validate_username(request.data['username']):
+                return Response({'message': 'Invalid username'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.data.get('password'):
+            if not validate_password(request.data['password']):
+                return Response({'message': 'Not a strong password length less than 8'}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response({
             "user": UserSerializer(user, context=self.get_serializer_context()).data,
-        })
+        }, status=status.HTTP_201_CREATED)
 
 class LoginViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
     """
@@ -100,7 +109,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
     serializer_class = ProfileSerializer
     lookup_field = 'user__username'
     http_method_names = ['get', 'post', 'patch', 'delete']
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         """
