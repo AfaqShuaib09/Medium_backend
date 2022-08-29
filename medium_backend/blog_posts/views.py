@@ -160,7 +160,7 @@ class ReviewReportViewSet(viewsets.GenericViewSet, mixins.UpdateModelMixin):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
-    lookup_field = 'id'
+    lookup_field = 'pk'
 
     def update(self, request, *args, **kwargs):
         """ update the post report status """
