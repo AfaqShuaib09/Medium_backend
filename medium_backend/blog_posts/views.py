@@ -72,7 +72,7 @@ class PostViewSet(viewsets.ModelViewSet):
             for tag in self.get_object().assigned_tags.all():
                 tag.delete()
         return super().update(request, *args, **kwargs)
-    
+
     @action(detail=True)
     def upvote(self, request, *args, **kwargs):
         """ Upvote the post action. """
@@ -84,7 +84,7 @@ class PostViewSet(viewsets.ModelViewSet):
         """ Downvote the post action """
         post = self.get_object()
         return Response(post.downvote(request.user))
-    
+
     @action(detail=True)
     def unvote(self, request, *args, **kwargs):
         """ Fires Unvote Action """

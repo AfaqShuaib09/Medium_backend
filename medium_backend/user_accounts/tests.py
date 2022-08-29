@@ -1,4 +1,4 @@
-from rest_framework.test import APITestCase, APIRequestFactory, APIClient, force_authenticate
+from rest_framework.test import APITestCase, APIRequestFactory, APIClient
 from rest_framework import status
 from django.contrib.auth.models import User
 from knox.models import AuthToken
@@ -14,7 +14,6 @@ class RegisterTest(APITestCase):
 
     def setUp(self):
         """ intiaitilize the request factory and the data to be sent in the request and before each test """
-        self.req_factory = APIRequestFactory()
         self.register_url = '/api/register/'
         self.data = {
             'username': 'test',
