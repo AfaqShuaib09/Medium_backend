@@ -7,6 +7,41 @@ from user_accounts.views import ProfileViewSet, ChangePasswordViewSet
 from user_accounts.views import UserViewSet
 from user_accounts.models import Profile
 
+REGISTER_TEST_USER_DATA = {
+    'username': 'test',
+    'password': 'testqweasd',
+    'email': 'test@test.com'
+}
+
+LOGIN_TEST_USER_DATA = {
+    'username': 'test',
+    'password': 'testqweasd'
+}
+
+ADMIN_CREDENTIALS = {
+    'username': 'test_admin',
+    'email': 'adminboi@admin.com',
+    'password': 'admin1234'
+}
+
+USER_DATA = {
+    'username': 'afaqboi',
+    'email': 'afaq.shoaib09@gmail.com',
+    'password': 'afaq2327'
+}
+
+PROFILE_CREATION_DATA = {
+    'username': 'afaqboi',
+    'full_name': 'Afaq Shoaib',
+    'bio': 'I am a software developer',
+    'gender': 'Male',
+    'cnic_number' : '35202-2567944-3',
+    'contact_number' : '+923064416475'
+}
+INVALID_GENDER = 'in'
+INVALID_CNIC = '1234-56789-0125'
+INVALID_CONTACT_NO = '+9230644164'
+NEW_PASSWORD = 'new_password'
 
 # Create your tests here.
 class RegisterTest(APITestCase):
@@ -15,11 +50,7 @@ class RegisterTest(APITestCase):
     def setUp(self):
         """ intiaitilize the request factory and the data to be sent in the request and before each test """
         self.register_url = '/api/register/'
-        self.data = {
-            'username': 'test',
-            'email': 'test@test.com',
-            'password': 'testqweasd',
-        }
+        self.data = REGISTER_TEST_USER_DATA
         return super().setUp()
 
     def tearDown(self):
@@ -99,10 +130,7 @@ class LoginTest(APITestCase):
         user = User.objects.create(username='test', email ='test@test.com')
         user.set_password('testqweasd')
         user.save()
-        self.data = {
-            "username": "test",
-            "password": "testqweasd"
-        }
+        self.data = LOGIN_TEST_USER_DATA
         return super().setUp()
 
     def tearDown(self):
@@ -133,8 +161,9 @@ class UserTest(APITestCase):
     def setUp(self):
         self.user_url = '/api/users/'
         self.login_url = '/api/login/'
-        self.user = User.objects.create_superuser(username='test_admin', email='adminboi@admin.com')
-        self.user.set_password('admin1234')
+        self.user = User.objects.create_superuser(username=ADMIN_CREDENTIALS['username'],
+                                                    email=ADMIN_CREDENTIALS['email'])
+        self.user.set_password(ADMIN_CREDENTIALS['password'])
         self.user.save()
         self.token = AuthToken.objects.create(user=self.user)[1]
         return super().setUp()
@@ -189,8 +218,8 @@ class UserProfileViewSetTest(APITestCase):
     def setUp(self):
         self.user_url = '/api/users/'
         self.login_url = '/api/login/'
-        self.user = User.objects.create(username='afaqboi', email='afaq.shoaib09@gmail.com')
-        self.user.set_password('afaq2327')
+        self.user = User.objects.create(username=USER_DATA['username'], email=USER_DATA['email'])
+        self.user.set_password(USER_DATA['password'])
         self.user.save()
         self.token = AuthToken.objects.create(user=self.user)[1]
         return super().setUp()
@@ -251,7 +280,6 @@ class UserProfileViewSetTest(APITestCase):
         request = self.factory.patch(url, update_profile_data, HTTP_AUTHORIZATION='Token ' + self.token)
         view = ProfileViewSet.as_view({
             'patch': 'partial_update',
-            'put': 'update'
         })
         response = view(request, user__username='afaqboi')
         assert status.HTTP_200_OK == response.status_code
@@ -321,13 +349,7 @@ class UserProfileViewSetTest(APITestCase):
         # delete the profile here because the profile is created on successful registration
         self.test_delete_user_profile()
         url = '/api/profile/'
-        data = {
-            'username': 'afaqboi',
-            'full_name': 'test full name',
-            'address': 'test address',
-            'gender': 'Male',
-            'bio': 'test bio',
-        }
+        data = PROFILE_CREATION_DATA
         request = self.factory.post(url, HTTP_AUTHORIZATION='Token ' + self.token, data=data)
         view = ProfileViewSet.as_view({
             'post': 'create'
@@ -341,11 +363,7 @@ class UserProfileViewSetTest(APITestCase):
         # delete the profile here because the profile is created on successful registration
         self.test_delete_user_profile()
         url = '/api/profile/'
-        data = {
-            'username': 'afaqboi',
-            'full_name': 'test full name',
-            'address': 'test address',
-        }
+        data = PROFILE_CREATION_DATA
         request = self.factory.post(url, HTTP_AUTHORIZATION='Token ' + 'invalid_token', data=data)
         view = ProfileViewSet.as_view({
             'post': 'create'
@@ -376,7 +394,7 @@ class UserProfileViewSetTest(APITestCase):
         url = '/api/profile/'
         data = {
             'username': 'afaqboi',
-            'gender': 'in',
+            'gender': INVALID_GENDER
         }
         request = self.factory.post(url, HTTP_AUTHORIZATION='Token ' + self.token, data=data)
         view = ProfileViewSet.as_view({
@@ -392,7 +410,7 @@ class UserProfileViewSetTest(APITestCase):
         url = '/api/profile/'
         data = {
             'username': 'afaqboi',
-            'cnic': '123456789012345',
+            'cnic': INVALID_CNIC,
         }
         request = self.factory.post(url, HTTP_AUTHORIZATION='Token ' + self.token, data=data)
         view = ProfileViewSet.as_view({
@@ -407,7 +425,7 @@ class UserProfileViewSetTest(APITestCase):
         url = '/api/profile/'
         data = {
             'username': 'afaqboi',
-            'contact_number': '123456789012345',
+            'contact_number': INVALID_CONTACT_NO,
         }
         request = self.factory.post(url, HTTP_AUTHORIZATION='Token ' + self.token, data=data)
         view = ProfileViewSet.as_view({
@@ -422,8 +440,8 @@ class TestChangeUserPasswordView(APITestCase):
     def setUp(self):
         """ Set up the test """
         self.factory = APIRequestFactory()
-        self.user = User.objects.create(username='afaqboi', email='afaq.shoaib@gmail.com')
-        self.user.set_password('testpassword')
+        self.user = User.objects.create(username=USER_DATA['username'], email=USER_DATA['email'])
+        self.user.set_password(USER_DATA['password'])
         self.user.save()
         self.token = AuthToken.objects.create(user=self.user)[1]
 
@@ -431,8 +449,8 @@ class TestChangeUserPasswordView(APITestCase):
         """ Test to change user password successfully """
         url = '/api/change-password/'
         data = {
-            'old_password': 'testpassword',
-            'new_password': 'new_password',
+            'old_password': USER_DATA['password'],
+            'new_password': NEW_PASSWORD,
         }
         response = self.factory.put(url, HTTP_AUTHORIZATION='Token ' + self.token, data=data)
         view = ChangePasswordViewSet.as_view({
@@ -445,8 +463,8 @@ class TestChangeUserPasswordView(APITestCase):
         """ Test to change user password with invalid token """
         url = '/api/change-password/'
         data = {
-            'old_password': 'testpassword',
-            'new_password': 'new_password',
+            'old_password': USER_DATA['password'],
+            'new_password': NEW_PASSWORD,
         }
         response = self.factory.put(url, HTTP_AUTHORIZATION='Token ' + 'invalid_token', data=data)
         view = ChangePasswordViewSet.as_view({
@@ -460,7 +478,7 @@ class TestChangeUserPasswordView(APITestCase):
         url = '/api/change-password/'
         data = {
             'old_password': 'invalid_password',
-            'new_password': 'new_password',
+            'new_password': NEW_PASSWORD,
         }
         response = self.factory.put(url, HTTP_AUTHORIZATION='Token ' + self.token, data=data)
         view = ChangePasswordViewSet.as_view({
