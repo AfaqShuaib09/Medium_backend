@@ -18,7 +18,7 @@ class Post(models.Model):
 
     def __str__(self):
         """ Overrides the str method to return the title of the post """
-        return f'{self.title}'
+        return f'Post: {self.title}'
 
     class Meta:
         """ Meta class defined to set the ordering of the posts """
@@ -95,10 +95,6 @@ class Comment(models.Model):
         on_delete=models.CASCADE, null=True
     )
 
-    def __str__(self):
-        """ Overrides the str method to return the content of the comment """
-        return self.content[:20]
-
     def children(self):
         """
         Returns the children of a comment.
@@ -121,7 +117,7 @@ class Report(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'Report Type: {self.type}, Post: {self.post.title}, Reported by: {self.reported_by.username}'
+        return f'Report Type: {self.type}, Post: {self.post.title}'
 
     class Meta:
         """

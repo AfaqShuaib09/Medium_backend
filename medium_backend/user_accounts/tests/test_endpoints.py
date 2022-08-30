@@ -1,51 +1,19 @@
-from email.mime import image
 import os
-from django.conf import settings
-from user_accounts.validators import validate_file_extension
-from rest_framework.test import APITestCase, APIRequestFactory, APIClient
-from rest_framework import status
+
 from django.contrib.auth.models import User
 from knox.models import AuthToken
-from user_accounts.views import ProfileViewSet, ChangePasswordViewSet
-
-from user_accounts.views import UserViewSet
+from rest_framework import status
+from rest_framework.test import APIClient, APIRequestFactory, APITestCase
 from user_accounts.models import Profile
+from user_accounts.tests.constants import (ADMIN_CREDENTIALS, INVALID_CNIC,
+                                           INVALID_CONTACT_NO, INVALID_GENDER,
+                                           LOGIN_TEST_USER_DATA, NEW_PASSWORD,
+                                           PROFILE_CREATION_DATA,
+                                           REGISTER_TEST_USER_DATA, USER_DATA)
+from user_accounts.validators import validate_file_extension
+from user_accounts.views import (ChangePasswordViewSet, ProfileViewSet,
+                                 UserViewSet)
 
-REGISTER_TEST_USER_DATA = {
-    'username': 'test',
-    'password': 'testqweasd',
-    'email': 'test@test.com'
-}
-
-LOGIN_TEST_USER_DATA = {
-    'username': 'test',
-    'password': 'testqweasd'
-}
-
-ADMIN_CREDENTIALS = {
-    'username': 'test_admin',
-    'email': 'adminboi@admin.com',
-    'password': 'admin1234'
-}
-
-USER_DATA = {
-    'username': 'afaqboi',
-    'email': 'afaq.shoaib09@gmail.com',
-    'password': 'afaq2327'
-}
-
-PROFILE_CREATION_DATA = {
-    'username': 'afaqboi',
-    'full_name': 'Afaq Shoaib',
-    'bio': 'I am a software developer',
-    'gender': 'Male',
-    'cnic_number' : '35202-2567944-3',
-    'contact_number' : '+923064416475'
-}
-INVALID_GENDER = 'in'
-INVALID_CNIC = '1234-56789-0125'
-INVALID_CONTACT_NO = '+9230644164'
-NEW_PASSWORD = 'new_password'
 
 # Create your tests here.
 class RegisterTest(APITestCase):
@@ -361,6 +329,7 @@ class UserProfileViewSetTest(APITestCase):
         response = view(request)
         assert status.HTTP_201_CREATED == response.status_code
         assert Profile.objects.filter(user=user).exists()
+        assert str(Profile.objects.get(user=user)) == f'{self.user.username} Profile'
 
     def test_create_user_profile_with_invalid_token(self):
         """ Fails to create a user profile with invalid token """
@@ -453,14 +422,6 @@ class UserProfileViewSetTest(APITestCase):
         })
         response = view(request)
         assert status.HTTP_400_BAD_REQUEST == response.status_code
-    
-    def test_validator_with_valid_file_extension(self):
-        """ Test to validate the img file extension """
-        dirname = os.path.dirname(__file__)
-        filename = os.path.join(dirname, '../media/images/Default/default_user.png')
-        image = open(filename, 'rb')
-        valid_image_ext = validate_file_extension(image)
-        assert valid_image_ext == True
 
 class TestChangeUserPassword(APITestCase):
     """ Test the change user password view. """

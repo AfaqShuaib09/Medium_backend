@@ -1,45 +1,16 @@
+from blog_posts.models import AssignedTag, Comment, Post, Report, Vote
+from blog_posts.tests.constants import (TEST_LOGIN_CREDENTIALS,
+                                        TEST_POST_DATA_1, TEST_POST_DATA_2,
+                                        TEST_UPDATE_POST_DATA,
+                                        TEST_UPDATE_POST_DATA_2,
+                                        TEST_UPDATE_POST_DATA_3,
+                                        TEST_USER_DATA)
+from blog_posts.views import ReviewReportViewSet
 from django.contrib.auth.models import User
 from knox.models import AuthToken
 from rest_framework import status
 from rest_framework.test import APIClient, APIRequestFactory, APITestCase
 
-from blog_posts.models import AssignedTag, Comment, Post, Report
-from blog_posts.views import ReviewReportViewSet
-
-TEST_USER_DATA = {
-    'username': 'test_user',
-    'password': 'test_password',
-    'email': 'test@test.com'
-}
-TEST_LOGIN_CREDENTIALS = {
-    'username': 'test_user',
-    'password': 'test_password'
-}
-TEST_POST_DATA_1 = {
-    'title': 'Test Post',
-    'content': 'Test Content',
-}
-TEST_POST_DATA_2 = {
-    'title': 'Test Post 2',
-    'content': 'Test Content 2',
-    'tags': 'Test_Tag,news,sports',
-}
-TEST_UPDATE_POST_DATA = {
-    'title': 'Updated Test Post',
-    'content': 'Updated Test Content',
-}
-
-TEST_UPDATE_POST_DATA_2 = {
-    'title': 'Updated Test Post 2',
-    'content': 'Updated Test Content 2',
-    'tags': 'update-tag,news,sports',
-}
-
-TEST_UPDATE_POST_DATA_3 = {
-    'title': 'Test Post 3',
-    'content': 'Test Content 3',
-    'tags': '',
-}
 
 # Create your tests here.
 class PostTest(APITestCase):
@@ -48,11 +19,11 @@ class PostTest(APITestCase):
         """ Set up test variables """
         self.client = APIClient()
         self.req_factory = APIRequestFactory()
-        user = User.objects.create_user(username=TEST_USER_DATA['username'], email=TEST_USER_DATA['email'])
-        user.set_password(TEST_USER_DATA['password'])
-        user.save()
+        self.user = User.objects.create_user(username=TEST_USER_DATA['username'], email=TEST_USER_DATA['email'])
+        self.user.set_password(TEST_USER_DATA['password'])
+        self.user.save()
         self.credentials = TEST_LOGIN_CREDENTIALS
-        self.token = AuthToken.objects.create(user)[1]
+        self.token = AuthToken.objects.create(self.user)[1]
         self.post_data = TEST_POST_DATA_1
         self.post_data_2 = TEST_POST_DATA_2
 
@@ -63,6 +34,7 @@ class PostTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['title'], self.post_data['title'])
         self.assertEqual(response.data['content'], self.post_data['content'])
+        assert str(Post.objects.get(title=self.post_data['title'])) == f'Post: {self.post_data["title"]}'
 
     def test_create_post_with_tags(self):
         """ Test create post with tags """
@@ -75,6 +47,8 @@ class PostTest(APITestCase):
         for tag in tags_list:
             assigned_tags  = AssignedTag.objects.get(tag__name=tag, post=response.data['id'])
             self.assertEqual(assigned_tags.tag.name, tag)
+            assert str(assigned_tags.tag) == f'{tag}'
+            assert str(assigned_tags) == f'{self.post_data_2["title"]} - {tag}'
 
     def test_create_post_with_invalid_token(self):
         """ Fail to create post with invalid token """
@@ -151,7 +125,7 @@ class PostTest(APITestCase):
         for tag in tags_list:
             assigned_tags  = AssignedTag.objects.get(tag__name=tag, post=response.data['id'])
             self.assertEqual(assigned_tags.tag.name, tag)
-    
+
     def test_update_post_by_removing_all_tags(self):
         """ Test to update post by removing all tags """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
@@ -162,7 +136,6 @@ class PostTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], TEST_UPDATE_POST_DATA_3['title'])
         self.assertEqual(response.data['content'], TEST_UPDATE_POST_DATA_3['content'])
-        
 
     def test_update_post_with_invalid_id(self):
         """ Fails to update post with invalid id """
@@ -218,6 +191,7 @@ class PostTest(APITestCase):
         response = self.client.get(f'/api/posts/{post.id}/upvote/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data == 'Successfully up voted this post'
+        assert str(Vote.objects.get(post=post, user=self.user)) == f'vote: {self.user.username} - {post.title}'
 
     def test_post_upvote_already_upvoted(self):
         """ Test to check post already upvoted """
@@ -404,6 +378,7 @@ class ReportTest(APITestCase):
         response = self.client.post('/api/reports/', self.report_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         assert response.data['type'] == 'It\'s spam'
+        assert str(Report.objects.get(id=response.data['id'])) == f'Report Type: spam, Post: {self.post_1.title}'
     
     def test_report_already_reported_post(self):
         """ Test to report already reported post """
@@ -553,7 +528,7 @@ class VoteTest(APITestCase):
         assert len(response.data) == 1
 
     def test_get_vote_success(self):
-        """ Test to get all post votes """
+        """ Test to get all post votes of the passed post id """
         response = self.client.get(f'/api/votes/?post={self.post.id}', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert len(response.data) == 1

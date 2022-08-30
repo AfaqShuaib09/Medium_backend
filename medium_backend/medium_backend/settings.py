@@ -143,3 +143,4 @@ REST_FRAMEWORK = {
 REST_KNOX = {
        'TOKEN_TTL': timedelta(hours=2),  # default time 2h
 }
+TEST_RUNNER = "redgreenunittest.django.runner.RedGreenDiscoverRunner"
