@@ -109,7 +109,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
     serializer_class = ProfileSerializer
     lookup_field = 'user__username'
     http_method_names = ['get', 'post', 'patch', 'delete']
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
     def create(self, request, *args, **kwargs):
         """
@@ -121,9 +121,6 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 return Response({"message": "Profile already exists"}, status=status.HTTP_400_BAD_REQUEST)
         except:
             return Response({'message': 'User not found'}, status=404)
-
-        if request.user != User.objects.get(username=request.data['username']):
-            return Response({"message": "Creation of other user profile not allowed"})
 
         if request.data.get('cnic'):
             if not validate_cnic(request.data.get('cnic')):

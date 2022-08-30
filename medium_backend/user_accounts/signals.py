@@ -15,7 +15,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     """
     reset_password_token = "{}?token={}".format(reverse('password_reset:reset-password-request'),
                                                 reset_password_token.key)
-    print("*"*65)
+    print('\n' ,"*"*65)
     print("reset_password_token: {}".format(reset_password_token))
     print("*"*65, '\n')
 

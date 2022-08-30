@@ -1,3 +1,7 @@
+from email.mime import image
+import os
+from django.conf import settings
+from user_accounts.validators import validate_file_extension
 from rest_framework.test import APITestCase, APIRequestFactory, APIClient
 from rest_framework import status
 from django.contrib.auth.models import User
@@ -433,8 +437,32 @@ class UserProfileViewSetTest(APITestCase):
         })
         response = view(request)
         assert status.HTTP_400_BAD_REQUEST == response.status_code
+    
+    def test_create_user_profile_with_already_existing_username(self):
+        """ Fails to create a user profile with already existing username """
+        # delete the profile here because the profile is created on successful registration
+        self.test_create_user_profile()
+        url = '/api/profile/'
+        data = {
+            'username': 'afaqboi',
+            'full_name': 'test full name',
+        }
+        request = self.factory.post(url, HTTP_AUTHORIZATION='Token ' + self.token, data=data)
+        view = ProfileViewSet.as_view({
+            'post': 'create'
+        })
+        response = view(request)
+        assert status.HTTP_400_BAD_REQUEST == response.status_code
+    
+    def test_validator_with_valid_file_extension(self):
+        """ Test to validate the img file extension """
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, '../media/images/Default/default_user.png')
+        image = open(filename, 'rb')
+        valid_image_ext = validate_file_extension(image)
+        assert valid_image_ext == True
 
-class TestChangeUserPasswordView(APITestCase):
+class TestChangeUserPassword(APITestCase):
     """ Test the change user password view. """
 
     def setUp(self):
@@ -486,3 +514,8 @@ class TestChangeUserPasswordView(APITestCase):
         })
         response = view(response, pk=self.user.id)
         assert status.HTTP_400_BAD_REQUEST == response.status_code
+
+    def test_forgot_password_to_print_reset_code(self):
+        """ Reset password code is printed on the console """
+        response = self.client.post('/api/forgot-password/', data={'email': self.user.email})
+        assert status.HTTP_200_OK == response.status_code

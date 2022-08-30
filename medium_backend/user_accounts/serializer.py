@@ -35,8 +35,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             return user
         except KeyError:
             raise (serializers.ValidationError("Required fields are missing 😔"))
-        except Exception as err:
-            raise (serializers.ValidationError(err))
 
 
 class UserSerializer(serializers.ModelSerializer):

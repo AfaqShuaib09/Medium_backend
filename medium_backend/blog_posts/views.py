@@ -136,11 +136,7 @@ class ReportPostViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """ Override create method to check if the user has already reported the post. """
-        try:
-            return super().create(request, *args, **kwargs)
-        except IntegrityError:
-            content = {'error': 'IntegrityError: Already reported by the user.'}
-            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        return super().create(request, *args, **kwargs)
     
     def get_queryset(self):
         """ if user is admin, return all the reports else return only the reports of the user """
@@ -176,7 +172,7 @@ class ReviewReportViewSet(viewsets.GenericViewSet, mixins.UpdateModelMixin):
         return Response(instance.status, status=status.HTTP_200_OK)
 
 
-class VotePostViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+class VotePostViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin):
     """ Allow user to vote on the post """
     queryset = Vote.objects.all()
     serializer_class = VoteSerializer
@@ -193,6 +189,6 @@ class VotePostViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             queryset = queryset.filter(post=int(post_id))
         return queryset
 
-    def retrieve(self, request, *args, **kwargs):
-        """ Block the retrieve action """
-        return Response({"message" :"Method Not Allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    # def retrieve(self, request, *args, **kwargs):
+    #     """ Block the retrieve action """
+    #     return Response({"message" :"Method Not Allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
