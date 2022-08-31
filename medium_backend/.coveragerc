@@ -6,8 +6,7 @@ omit =
   *env/*,
   *migrations/*,
   *settings.py,
-  *urls.py,
   manage.py,
   *__init__.py,
   *tests/*,
-  *admin.py
+  *urls.py,

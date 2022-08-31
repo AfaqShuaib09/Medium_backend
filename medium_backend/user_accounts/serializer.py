@@ -25,7 +25,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                     ]
                 },
             }
-    
+
     def create(self, validated_data):
         """
         Handles the validated data to create a user.

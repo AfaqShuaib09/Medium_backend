@@ -1,3 +1,4 @@
+from curses import keyname
 from blog_posts.models import AssignedTag, Comment, Post, Report, Vote
 from blog_posts.tests.constants import (TEST_LOGIN_CREDENTIALS,
                                         TEST_POST_DATA_1, TEST_POST_DATA_2,
@@ -7,6 +8,8 @@ from blog_posts.tests.constants import (TEST_LOGIN_CREDENTIALS,
                                         TEST_USER_DATA)
 from blog_posts.views import ReviewReportViewSet
 from django.contrib.auth.models import User
+from user_accounts.tests.test_factories import UserFactory
+from blog_posts.tests.test_factories import PostFactory, TagFactory, AssignedTagFactory, VoteFatory, CommentFactory, ReportFactory
 from knox.models import AuthToken
 from rest_framework import status
 from rest_framework.test import APIClient, APIRequestFactory, APITestCase
@@ -19,9 +22,7 @@ class PostTest(APITestCase):
         """ Set up test variables """
         self.client = APIClient()
         self.req_factory = APIRequestFactory()
-        self.user = User.objects.create_user(username=TEST_USER_DATA['username'], email=TEST_USER_DATA['email'])
-        self.user.set_password(TEST_USER_DATA['password'])
-        self.user.save()
+        self.user = UserFactory(**TEST_USER_DATA)
         self.credentials = TEST_LOGIN_CREDENTIALS
         self.token = AuthToken.objects.create(self.user)[1]
         self.post_data = TEST_POST_DATA_1
@@ -34,7 +35,7 @@ class PostTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['title'], self.post_data['title'])
         self.assertEqual(response.data['content'], self.post_data['content'])
-        assert str(Post.objects.get(title=self.post_data['title'])) == f'Post: {self.post_data["title"]}'
+        assert str(PostFactory(title=response.data['title'], posted_by=self.user)) == f'Post: {self.post_data["title"]}'
 
     def test_create_post_with_tags(self):
         """ Test create post with tags """
@@ -45,7 +46,8 @@ class PostTest(APITestCase):
         self.assertEqual(response.data['content'], self.post_data_2['content'])
         tags_list = self.post_data_2['tags'].split(',')
         for tag in tags_list:
-            assigned_tags  = AssignedTag.objects.get(tag__name=tag, post=response.data['id'])
+            assigned_tags = AssignedTagFactory(tag=TagFactory(name=tag),
+                                            post=PostFactory(title=self.post_data_2['title'], posted_by=self.user))
             self.assertEqual(assigned_tags.tag.name, tag)
             assert str(assigned_tags.tag) == f'{tag}'
             assert str(assigned_tags) == f'{self.post_data_2["title"]} - {tag}'
@@ -83,7 +85,7 @@ class PostTest(APITestCase):
         """ Test to get post by id """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_post()
-        post = Post.objects.get(title=self.post_data['title'])
+        post = PostFactory(title=self.post_data['title'], posted_by=self.user)
         response = self.client.get(f'/api/posts/{post.id}/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], self.post_data['title'])
@@ -104,7 +106,7 @@ class PostTest(APITestCase):
         """ Test to update post successfully """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_post()
-        post = Post.objects.get(title=self.post_data['title'])
+        post = PostFactory(title=self.post_data['title'], posted_by=self.user)
         updated_data = TEST_UPDATE_POST_DATA
         response = self.client.put(f'/api/posts/{post.id}/', data=updated_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -115,7 +117,7 @@ class PostTest(APITestCase):
         """ Test to update post by change tag """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_post_with_tags()
-        post = Post.objects.get(title=self.post_data_2['title'])
+        post = PostFactory(title=self.post_data_2['title'], posted_by=self.user)
         updated_data = TEST_UPDATE_POST_DATA_2
         response = self.client.put(f'/api/posts/{post.id}/', data=updated_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -123,14 +125,14 @@ class PostTest(APITestCase):
         self.assertEqual(response.data['content'], TEST_UPDATE_POST_DATA_2['content'])
         tags_list = TEST_UPDATE_POST_DATA_2['tags'].split(',')
         for tag in tags_list:
-            assigned_tags  = AssignedTag.objects.get(tag__name=tag, post=response.data['id'])
+            assigned_tags = AssignedTagFactory(tag=TagFactory(name=tag), post=post)
             self.assertEqual(assigned_tags.tag.name, tag)
 
     def test_update_post_by_removing_all_tags(self):
         """ Test to update post by removing all tags """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_post_with_tags()
-        post = Post.objects.get(title=self.post_data_2['title'])
+        post = PostFactory(title=self.post_data_2['title'], posted_by=self.user)
         updated_data = TEST_UPDATE_POST_DATA_3
         response = self.client.put(f'/api/posts/{post.id}/', data=updated_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -154,10 +156,10 @@ class PostTest(APITestCase):
         """ Test to delete post successfully """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_post()
-        post = Post.objects.get(title=self.post_data['title'])
+        post = PostFactory(title=self.post_data['title'], posted_by=self.user)
         response = self.client.delete(f'/api/posts/{post.id}/', format='json')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Post.objects.filter(title=self.post_data['title']).count(), 0)
+        self.assertEqual(Post.objects.filter(title=self.post_data['title'], posted_by=self.user).count(), 0)
 
     def test_delete_post_with_invalid_token(self):
         """ Fails to delete post with invalid token """
@@ -167,37 +169,49 @@ class PostTest(APITestCase):
 
     def test_search_posts_with_valid_query(self):
         """ Test to search posts with valid query """
+        keyword = 'Test'
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_post()
-        response = self.client.get('/api/posts/?search=Test', format='json')
+        response = self.client.get(f'/api/posts/?search={keyword}', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['title'], 'Test Post')
+        if response.data:
+            assert (keyword in response.data[0]['title'])
 
     def test_search_posts_with_tags(self):
         """ Test to search posts with tags query """
+        search_keyword = 'news'
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_post_with_tags()
-        response = self.client.get('/api/posts/?search_fields=assigned_tags__tag__name&search=news', format='json')
+        response = self.client.get(f'/api/posts/?search_fields=assigned_tags__tag__name&search={search_keyword}',
+                                    format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['title'], self.post_data_2['title'])
+        # check the searched tag posts is in the response
+        found = False
+        if response.data:
+            for post in response.data:
+                for tag in post['assigned_tags']:
+                    if tag['name'] == search_keyword:
+                        found = True
+                        break
+        else:
+            found = True
+        self.assertTrue(found)
 
     def test_post_upvote_success(self):
         """ Test the upvote post functionality """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_post()
-        post = Post.objects.get(title=self.post_data['title'])
+        post = PostFactory(title=self.post_data['title'], posted_by=self.user)
         response = self.client.get(f'/api/posts/{post.id}/upvote/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data == 'Successfully up voted this post'
-        assert str(Vote.objects.get(post=post, user=self.user)) == f'vote: {self.user.username} - {post.title}'
+        assert str(VoteFatory(post=post, user=self.user)) == f'vote: {self.user.username} - {post.title}'
 
     def test_post_upvote_already_upvoted(self):
         """ Test to check post already upvoted """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_post_upvote_success()
-        post = Post.objects.get(title=self.post_data['title'])
+        post = PostFactory(title=self.post_data['title'], posted_by=self.user)
         response = self.client.get(f'/api/posts/{post.id}/upvote/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data == 'Already up voted this post'
@@ -206,7 +220,7 @@ class PostTest(APITestCase):
         """ Test the post downvote functionality """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_post()
-        post = Post.objects.get(title=self.post_data['title'])
+        post = PostFactory(title=self.post_data['title'], posted_by=self.user)
         response = self.client.get(f'/api/posts/{post.id}/downvote/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data == 'Successfully down voted this post'
@@ -215,7 +229,7 @@ class PostTest(APITestCase):
         """ Test to check post already downvoted """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_post_downvote_success()
-        post = Post.objects.get(title=self.post_data['title'])
+        post = PostFactory(title=self.post_data['title'], posted_by=self.user)
         response = self.client.get(f'/api/posts/{post.id}/downvote/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data == 'Already down voted this post'
@@ -230,7 +244,7 @@ class PostTest(APITestCase):
         """ Test to check post unvote functionality """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_post_upvote_success()
-        post = Post.objects.get(title=self.post_data['title'])
+        post = PostFactory(title=self.post_data['title'], posted_by=self.user)
         response = self.client.get(f'/api/posts/{post.id}/unvote/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data == 'Successfully unvoted this post'
@@ -239,7 +253,7 @@ class PostTest(APITestCase):
         """ Test to unvote the non voted post """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_post()
-        post = Post.objects.get(title=self.post_data['title'])
+        post = PostFactory(title=self.post_data['title'], posted_by=self.user)
         response = self.client.get(f'/api/posts/{post.id}/unvote/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data == 'You have not voted this post'
@@ -248,7 +262,7 @@ class PostTest(APITestCase):
         """ Test post unvote with invalid token unauthenticated """
         self.test_post_upvote_success()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + 'invalid_token')
-        post = Post.objects.get(title=self.post_data['title'])
+        post = PostFactory(title=self.post_data['title'], posted_by=self.user)
         response = self.client.get(f'/api/posts/{post.id}/unvote/', format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -262,10 +276,10 @@ class CommentTest(APITestCase):
         post.test_create_post()
         self.post_data = TEST_POST_DATA_1
         self.post_data_2 = TEST_POST_DATA_2
-        self.user = User.objects.get(username=TEST_USER_DATA['username'])
+        self.user = UserFactory(username=TEST_USER_DATA['username'])
         self.token = AuthToken.objects.create(user=self.user)[1]
-        self.post_1 = Post.objects.get(title=post.post_data['title'])
-        self.post_2 = Post.objects.get(title=post.post_data_2['title'])
+        self.post_1 = PostFactory(title=post.post_data['title'], posted_by=self.user)
+        self.post_2 = PostFactory(title=post.post_data_2['title'], posted_by=self.user)
         self.comment_data = {
             'content': 'Test Comment',
             'post': self.post_1.id,
@@ -282,7 +296,7 @@ class CommentTest(APITestCase):
         """ Test to add reply to comment successfully """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_comment_success()
-        comment = Comment.objects.get(content=self.comment_data['content'])
+        comment = CommentFactory(content=self.comment_data['content'], post=self.post_1, owner=self.user)
         self.reply_data = {
             'parent': comment.id,
             'content': 'Reply to comment',
@@ -309,7 +323,7 @@ class CommentTest(APITestCase):
         """ Test to update comment """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_comment_success()
-        comment = Comment.objects.get(content=self.comment_data['content'])
+        comment = CommentFactory(content=self.comment_data['content'], post=self.post_1, owner=self.user)
         self.comment_data['content'] = 'Updated comment'
         response = self.client.put(f'/api/comment/{comment.id}/', self.comment_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -325,7 +339,7 @@ class CommentTest(APITestCase):
         """ Test to update comment with invalid auth token """
         self.test_create_comment_success()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + 'invalid_token')
-        comment = Comment.objects.get(content=self.comment_data['content'])
+        comment = CommentFactory(content=self.comment_data['content'], post=self.post_1, owner=self.user)
         response = self.client.put(f'/api/comment/{comment.id}/', self.comment_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -333,17 +347,20 @@ class CommentTest(APITestCase):
         """ Test to delete comment """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.test_create_comment_success()
-        comment = Comment.objects.get(content=self.comment_data['content'])
+        comment = CommentFactory(content=self.comment_data['content'], post=self.post_1, owner=self.user)
         response = self.client.delete(f'/api/comment/{comment.id}/', format='json')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_get_post_comments(self):
         """ Test to get all post comments """
+        search_post = self.post_1.id
         self.test_create_comment_success()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
-        response = self.client.get(f'/api/post_comment/?post={self.post_1.id}', format='json')
+        response = self.client.get(f'/api/post_comment/?post={search_post}', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        assert len(response.data) == 1
+        if response.data:
+            for comment in response.data:
+                assert comment['post'].get('id') == self.post_1.id
 
 
 class ReportTest(APITestCase):
@@ -351,8 +368,8 @@ class ReportTest(APITestCase):
     def setUp(self):
         """ Set up test data """
         self.client = APIClient()
-        self.user = User.objects.create_user(username='test', email = 'test@test.com')
-        self.user.set_password('asdqweasd')
+        self.user = UserFactory(username=TEST_USER_DATA['username'],
+                                email=TEST_USER_DATA['email'], password=TEST_USER_DATA['password'])
         self.token = AuthToken.objects.create(user=self.user)[1]
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.post_data = {
@@ -365,8 +382,8 @@ class ReportTest(APITestCase):
             'content': 'Test Content 2',
             'posted_by': self.user,
         }
-        self.post_1 = Post.objects.create(**self.post_data)
-        self.post_2 = Post.objects.create(**self.post_data_2)
+        self.post_1 = PostFactory(**self.post_data)
+        self.post_2 = PostFactory(**self.post_data_2)
         self.report_data = {
             'post': self.post_1.id,
             'type': 'spam',
@@ -378,8 +395,9 @@ class ReportTest(APITestCase):
         response = self.client.post('/api/reports/', self.report_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         assert response.data['type'] == 'It\'s spam'
-        assert str(Report.objects.get(id=response.data['id'])) == f'Report Type: spam, Post: {self.post_1.title}'
-    
+        assert str(ReportFactory(reported_by=self.user, post=self.post_1)) == ('Report Type: spam,'
+                                                                                + f' Post: {self.post_1.title}')
+
     def test_report_already_reported_post(self):
         """ Test to report already reported post """
         self.test_create_report_success()
@@ -391,13 +409,12 @@ class ReportTest(APITestCase):
         self.report_data['type'] = 'invalid_type'
         response = self.client.post('/api/reports/', self.report_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    
+
     def test_get_all_report_with_admin_user(self):
         """ Test to get all reports with admin user """
         self.test_create_report_success()
-        super_user = User.objects.create_superuser(username='admin', email='admin@admin.com')
-        super_user.set_password('admin2327')
-        super_user.save()
+        super_user = UserFactory(username='admin', email='admin@admin.com',
+                                    password='admin2327', is_superuser=True, is_staff=True)
         token = AuthToken.objects.create(user=super_user)[1]
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
         response = self.client.get('/api/reports/', format='json')
@@ -420,12 +437,14 @@ class ReportTest(APITestCase):
         self.test_create_report_success()
         response = self.client.get('/api/reports/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0].get('reported_by')['id'], self.user.id)
+        if response.data:
+            for report in response.data:
+                assert report['reported_by'].get('id') == self.user.id
 
     def test_update_report_success(self):
         """ Test to edit the reports """
         self.test_create_report_success()
-        report = Report.objects.get(post=self.post_1.id)
+        report = ReportFactory(post=self.post_1, reported_by=self.user)
         self.report_data['type'] = 'hate-speech'
         response = self.client.put(f'/api/reports/{report.id}/', self.report_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -434,7 +453,7 @@ class ReportTest(APITestCase):
     def test_update_report_with_invalid_token(self):
         """ Test update report with invalid authentication token """
         self.test_create_report_success()
-        report = Report.objects.get(post=self.post_1.id)
+        report = ReportFactory(post=self.post_1, reported_by=self.user)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + 'invalid_token')
         response = self.client.put(f'/api/reports/{report.id}/', self.report_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -442,7 +461,7 @@ class ReportTest(APITestCase):
     def test_delete_report_success(self):
         """ Test to delete report """
         self.test_create_report_success()
-        report = Report.objects.get(post=self.post_1.id)
+        report = ReportFactory(post=self.post_1, reported_by=self.user)
         response = self.client.delete(f'/api/reports/{report.id}/', format='json')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -456,7 +475,7 @@ class ReportTest(APITestCase):
         """ Fails to review report by a simple user """
         self.test_create_report_success()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
-        report = Report.objects.filter(post=self.post_1.id).first()
+        report = ReportFactory(post=self.post_1, reported_by=self.user)
         review_data = {
             'status': 'approved',
         }
@@ -467,7 +486,7 @@ class ReportTest(APITestCase):
         """ Test review report success by a superuser (admin) """
         req_factory = APIRequestFactory()
         self.test_create_report_success()
-        report = Report.objects.filter(post=self.post_1.id).first()
+        report = ReportFactory(post=self.post_1, reported_by=self.user)
         super_user = User.objects.create_superuser(username='admin', email='admin@admin.com')
         super_user.set_password('admin123')
         super_user.save()
@@ -488,7 +507,7 @@ class ReportTest(APITestCase):
         """ Test review report by invalid status """
         req_factory = APIRequestFactory()
         self.test_create_report_success()
-        report = Report.objects.get(post=self.post_1.id, reported_by=self.user.id)
+        report = ReportFactory(post=self.post_1, reported_by=self.user)
         super_user = User.objects.create_superuser(username='admin', email='admin@admin.com')
         super_user.set_password('admin123')
         super_user.save()
@@ -511,24 +530,23 @@ class VoteTest(APITestCase):
     def setUp(self):
         """ Set up test data """
         self.client = APIClient()
-        self.user = User.objects.create_user(username='test', email = 'test@test.com')
-        self.user.set_password('asdqweasd')
+        self.user = UserFactory()
         self.token = AuthToken.objects.create(user=self.user)[1]
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         post_test = PostTest()
         post_test.setUp()
         post_test.test_post_upvote_success()
         post_test.test_create_post_with_tags()
-        self.post = Post.objects.get(title='Test Post')
+        self.post = PostFactory(title='Test Post', posted_by=self.user)
 
     def test_get_all_votes_success(self):
         """ Test to get all votes """
         response = self.client.get('/api/votes/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        assert len(response.data) == 1
 
-    def test_get_vote_success(self):
+    def test_get_all_post_vote_success(self):
         """ Test to get all post votes of the passed post id """
         response = self.client.get(f'/api/votes/?post={self.post.id}', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        assert len(response.data) == 1
+        for vote in response.data:
+            self.assertEqual(vote['post'], self.post.id)
