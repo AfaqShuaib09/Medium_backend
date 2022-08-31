@@ -1,4 +1,6 @@
+import email
 import os
+import pytest
 
 from django.contrib.auth.models import User
 from knox.models import AuthToken
@@ -9,11 +11,12 @@ from user_accounts.tests.constants import (ADMIN_CREDENTIALS, INVALID_CNIC,
                                            INVALID_CONTACT_NO, INVALID_GENDER,
                                            LOGIN_TEST_USER_DATA, NEW_PASSWORD,
                                            PROFILE_CREATION_DATA,
-                                           REGISTER_TEST_USER_DATA, USER_DATA)
-from user_accounts.validators import validate_file_extension
+                                           REGISTER_TEST_USER_DATA, USER_DATA, TEST_PROFILE_UPDATE_DATA)
 from user_accounts.views import (ChangePasswordViewSet, ProfileViewSet,
                                  UserViewSet)
+from user_accounts.tests.test_factories import UserFactory, ProfileFactory
 
+pytestmark = pytest.mark.django_db
 
 # Create your tests here.
 class RegisterTest(APITestCase):
@@ -35,19 +38,19 @@ class RegisterTest(APITestCase):
         """
         response = self.client.post(self.register_url, self.data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(UserFactory().username, 'test')
+        self.assertEqual(UserFactory().email, self.data['email'])
         self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(User.objects.get().username, 'test')
-        self.assertEqual(User.objects.get().email, 'test@test.com')
 
     def test_register_with_already_existing_user(self):
         """
         Test that a register request with an already existing user
         """
-        User.objects.create(username='test', email ='test@test.com', password='testqweasd')
+        UserFactory.create(username='test')
         response = self.client.post(self.register_url, self.data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(User.objects.get().username, 'test')
+        self.assertEqual(UserFactory().email, self.data['email'])
 
     def test_user_cannot_register_without_username(self):
         """
@@ -99,9 +102,7 @@ class LoginTest(APITestCase):
     def setUp(self):
         """ Initialize the data before each login test """
         self.login_url = '/api/login/'
-        user = User.objects.create(username='test', email ='test@test.com')
-        user.set_password('testqweasd')
-        user.save()
+        user = UserFactory.create(username='test', email ='test@test.com', password='testqweasd')
         self.data = LOGIN_TEST_USER_DATA
         return super().setUp()
 
@@ -133,10 +134,9 @@ class UserTest(APITestCase):
     def setUp(self):
         self.user_url = '/api/users/'
         self.login_url = '/api/login/'
-        self.user = User.objects.create_superuser(username=ADMIN_CREDENTIALS['username'],
-                                                    email=ADMIN_CREDENTIALS['email'])
-        self.user.set_password(ADMIN_CREDENTIALS['password'])
-        self.user.save()
+        self.user = UserFactory.create(username=ADMIN_CREDENTIALS['username'],
+                                        email=ADMIN_CREDENTIALS['email'], password=ADMIN_CREDENTIALS['password'],
+                                        is_superuser = True, is_staff = True)
         self.token = AuthToken.objects.create(user=self.user)[1]
         return super().setUp()
 
@@ -190,9 +190,8 @@ class UserProfileViewSetTest(APITestCase):
     def setUp(self):
         self.user_url = '/api/users/'
         self.login_url = '/api/login/'
-        self.user = User.objects.create(username=USER_DATA['username'], email=USER_DATA['email'])
-        self.user.set_password(USER_DATA['password'])
-        self.user.save()
+        self.user = UserFactory.create(username=USER_DATA['username'],
+                                        email=USER_DATA['email'], password=USER_DATA['password'])
         self.token = AuthToken.objects.create(user=self.user)[1]
         return super().setUp()
 
@@ -242,12 +241,9 @@ class UserProfileViewSetTest(APITestCase):
 
     def test_update_user_profile(self):
         """ Test to update a user profile """
-        user = User.objects.get(username='afaqboi')
-        profile = Profile.objects.get(user=user)
-        update_profile_data = {
-            'full_name': 'test full name',
-            'bio': 'test bio',
-        }
+        user = UserFactory(username='afaqboi')
+        profile = ProfileFactory(user=user)
+        update_profile_data = TEST_PROFILE_UPDATE_DATA
         url = '/api/profile/afaqboi'
         request = self.factory.patch(url, update_profile_data, HTTP_AUTHORIZATION='Token ' + self.token)
         view = ProfileViewSet.as_view({
@@ -261,11 +257,7 @@ class UserProfileViewSetTest(APITestCase):
     
     def test_update_user_profile_with_invalid_token(self):
         """ Fails to update a user profile with invalid token """
-        user = User.objects.get(username='afaqboi')
-        update_profile_data = {
-            'full_name': 'test full name',
-            'bio': 'test bio',
-        }
+        update_profile_data = TEST_PROFILE_UPDATE_DATA
         url = '/api/profile/afaqboi'
         request = self.factory.put(url, update_profile_data, HTTP_AUTHORIZATION='Token ' + 'invalid_token')
         view = ProfileViewSet.as_view({
@@ -276,12 +268,9 @@ class UserProfileViewSetTest(APITestCase):
 
     def test_update_user_profile_with_nonexistent_username(self):
         """ Fails to update a user profile that doesn't exist """
-        user = User.objects.get(username='afaqboi')
-        profile = Profile.objects.get(user=user)
-        update_profile_data = {
-            'full_name': 'test full name',
-            'bio': 'test bio',
-        }
+        user = UserFactory(username='afaqboi')
+        profile = ProfileFactory(user=user)
+        update_profile_data = TEST_PROFILE_UPDATE_DATA
         url = '/api/profile/nonexistent_username'
         request = self.factory.patch(url, update_profile_data, HTTP_AUTHORIZATION='Token ' + self.token)
         view = ProfileViewSet.as_view({
@@ -292,8 +281,8 @@ class UserProfileViewSetTest(APITestCase):
 
     def test_delete_user_profile(self):
         """ Test to delete a user profile """
-        user = User.objects.get(username='afaqboi')
-        profile = Profile.objects.get(user=user)
+        user = UserFactory(username='afaqboi')
+        profile = ProfileFactory(user=user)
         url = '/api/profile/afaqboi'
         request = self.factory.delete(url, HTTP_AUTHORIZATION='Token ' + self.token)
         view = ProfileViewSet.as_view({
@@ -305,8 +294,8 @@ class UserProfileViewSetTest(APITestCase):
 
     def test_delete_user_profile_with_invalid_token(self):
         """ Fails to delete a user profile with invalid token """
-        user = User.objects.get(username='afaqboi')
-        profile = Profile.objects.get(user=user)
+        user = UserFactory(username='afaqboi')
+        profile = ProfileFactory(user=user)
         url = '/api/profile/afaqboi'
         request = self.factory.delete(url, HTTP_AUTHORIZATION='Token ' + 'invalid_token')
         view = ProfileViewSet.as_view({
@@ -317,7 +306,7 @@ class UserProfileViewSetTest(APITestCase):
 
     def test_create_user_profile(self):
         """ Test to create a user profile """
-        user = User.objects.get(username='afaqboi')
+        user = UserFactory(username='afaqboi')
         # delete the profile here because the profile is created on successful registration
         self.test_delete_user_profile()
         url = '/api/profile/'
@@ -329,7 +318,7 @@ class UserProfileViewSetTest(APITestCase):
         response = view(request)
         assert status.HTTP_201_CREATED == response.status_code
         assert Profile.objects.filter(user=user).exists()
-        assert str(Profile.objects.get(user=user)) == f'{self.user.username} Profile'
+        assert str(ProfileFactory(user=user)) == f'{self.user.username} Profile'
 
     def test_create_user_profile_with_invalid_token(self):
         """ Fails to create a user profile with invalid token """
@@ -429,9 +418,8 @@ class TestChangeUserPassword(APITestCase):
     def setUp(self):
         """ Set up the test """
         self.factory = APIRequestFactory()
-        self.user = User.objects.create(username=USER_DATA['username'], email=USER_DATA['email'])
-        self.user.set_password(USER_DATA['password'])
-        self.user.save()
+        self.user = UserFactory(username=USER_DATA['username'],
+                                            email=USER_DATA['email'], password=USER_DATA['password'])
         self.token = AuthToken.objects.create(user=self.user)[1]
 
     def test_change_user_password_success(self):

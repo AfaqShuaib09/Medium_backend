@@ -30,6 +30,12 @@ PROFILE_CREATION_DATA = {
     'cnic_number' : '35202-2567944-3',
     'contact_number' : '+923064416475'
 }
+
+TEST_PROFILE_UPDATE_DATA = {
+    'full_name': 'test full name',
+    'bio': 'test bio',
+}
+
 INVALID_GENDER = 'in'
 INVALID_CNIC = '1234-56789-0125'
 INVALID_CONTACT_NO = '+9230644164'
