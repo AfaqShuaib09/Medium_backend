@@ -34,7 +34,8 @@ class RegisterViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
                 return Response({'message': 'Invalid username'}, status=status.HTTP_400_BAD_REQUEST)
         if request.data.get('password'):
             if not validate_password(request.data['password']):
-                return Response({'message': 'Not a strong password length less than 8'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'message': 'Not a strong password length less than 8'},
+                                    status=status.HTTP_400_BAD_REQUEST)
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()

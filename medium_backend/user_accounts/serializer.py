@@ -30,11 +30,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         """
         Handles the validated data to create a user.
         """
-        try:
-            user = User.objects.create_user(**validated_data)
-            return user
-        except KeyError:
-            raise (serializers.ValidationError("Required fields are missing 😔"))
+        user = User.objects.create_user(**validated_data)
+        return user
 
 
 class UserSerializer(serializers.ModelSerializer):

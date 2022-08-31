@@ -37,7 +37,7 @@ class Profile(models.Model):
     country = CountryField(blank_label='(select country)', help_text='your country', blank=True, default='PK')
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES, default='', blank=True)
     bio = models.TextField(help_text='your bio', blank=True)
-    profile_pic = models.ImageField(upload_to=nameFile, blank=True, validators = [validate_file_extension], 
+    profile_pic = models.ImageField(upload_to=nameFile, blank=True, validators = [validate_file_extension],
                                         default='images/default/default_user.png')
 
     def __str__(self):
