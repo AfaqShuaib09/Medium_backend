@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_rest_passwordreset',
+    'django_extensions',
     'drf_yasg',
     'knox',
     'user_accounts',

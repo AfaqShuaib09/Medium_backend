@@ -11,7 +11,8 @@ from user_accounts.serializer import (ChangePasswordSerializer,
                                       ProfileSerializer, RegisterSerializer,
                                       UserSerializer)
 from user_accounts.utils import (validate_cnic, validate_contact_number,
-                                 validate_gender, validate_email, validate_password, validate_username)
+                                 validate_email, validate_gender,
+                                 validate_password, validate_username)
 
 
 # Create your views here.

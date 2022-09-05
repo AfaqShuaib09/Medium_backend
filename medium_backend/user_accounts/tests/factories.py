@@ -1,9 +1,8 @@
-from factory.django import DjangoModelFactory
-from factory import LazyAttribute, PostGenerationMethodCall
-
 from django.contrib.auth.models import User
-
+from factory import LazyAttribute, PostGenerationMethodCall
+from factory.django import DjangoModelFactory
 from user_accounts.models import Profile
+
 
 class UserFactory(DjangoModelFactory):
     """
@@ -26,3 +25,4 @@ class ProfileFactory(DjangoModelFactory):
     class Meta:
         model = Profile
         django_get_or_create = ('user',)
+    

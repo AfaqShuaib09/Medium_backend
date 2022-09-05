@@ -1,7 +1,4 @@
-import email
-import os
 import pytest
-
 from django.contrib.auth.models import User
 from knox.models import AuthToken
 from rest_framework import status
@@ -11,10 +8,11 @@ from user_accounts.tests.constants import (ADMIN_CREDENTIALS, INVALID_CNIC,
                                            INVALID_CONTACT_NO, INVALID_GENDER,
                                            LOGIN_TEST_USER_DATA, NEW_PASSWORD,
                                            PROFILE_CREATION_DATA,
-                                           REGISTER_TEST_USER_DATA, USER_DATA, TEST_PROFILE_UPDATE_DATA)
+                                           REGISTER_TEST_USER_DATA,
+                                           TEST_PROFILE_UPDATE_DATA, USER_DATA)
+from user_accounts.tests.factories import ProfileFactory, UserFactory
 from user_accounts.views import (ChangePasswordViewSet, ProfileViewSet,
                                  UserViewSet)
-from user_accounts.tests.test_factories import UserFactory, ProfileFactory
 
 pytestmark = pytest.mark.django_db
 

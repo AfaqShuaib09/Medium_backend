@@ -34,3 +34,6 @@ TEST_UPDATE_POST_DATA_3 = {
     'content': 'Test Content 3',
     'tags': '',
 }
+
+TAGS = 'update-tag,news,sports'
+TEST_COMMENT_CONTENT = 'Test Comment Content'

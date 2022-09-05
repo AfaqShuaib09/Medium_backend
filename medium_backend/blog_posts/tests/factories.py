@@ -1,9 +1,10 @@
 from datetime import datetime
-from factory.django import DjangoModelFactory
-from factory import LazyAttribute, PostGenerationMethodCall, SubFactory
 
-from user_accounts.tests.test_factories import UserFactory
-from blog_posts.models import Post, Tag, AssignedTag, Vote, Comment, Report
+from blog_posts.models import AssignedTag, Comment, Post, Report, Tag, Vote
+from factory import LazyAttribute, PostGenerationMethodCall, SubFactory
+from factory.django import DjangoModelFactory
+from user_accounts.tests.factories import UserFactory
+
 
 class PostFactory(DjangoModelFactory):
     """
@@ -17,7 +18,6 @@ class PostFactory(DjangoModelFactory):
     content = 'Test Content'
     created_at = LazyAttribute(lambda obj: datetime.now())
     posted_by = SubFactory(UserFactory)
-    # posted_by = LazyAttribute(lambda obj: UserFactory())
 
 class TagFactory(DjangoModelFactory):
     """
@@ -40,7 +40,8 @@ class AssignedTagFactory(DjangoModelFactory):
     post = SubFactory(PostFactory)
     tag = SubFactory(TagFactory)
 
-class VoteFatory(DjangoModelFactory):
+
+class VoteFactory(DjangoModelFactory):
     """
     Factory for Vote model to be used for testing purposes.
     """
@@ -59,9 +60,8 @@ class CommentFactory(DjangoModelFactory):
     """
     class Meta:
         model = Comment
-        django_get_or_create = ('content', 'post', 'owner')
+        # django_get_or_create = ('content', 'post', 'owner')
 
-    parent = None
     post = SubFactory(PostFactory)
     owner = SubFactory(UserFactory)
     content = 'Test comment'

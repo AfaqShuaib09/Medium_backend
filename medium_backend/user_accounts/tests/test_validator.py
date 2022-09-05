@@ -1,11 +1,11 @@
 import os
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from user_accounts.validators import validate_file_extension
-from django.core.exceptions import ValidationError
 
 
-class TestValidator(TestCase):
+class TestValidators(TestCase):
     """ Test class to check validator behaviour """
     def test_validator_with_valid_file_extension(self):
         """ Test to validate the img file extension """

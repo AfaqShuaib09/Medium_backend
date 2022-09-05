@@ -11,8 +11,7 @@ from blog_posts.permissions import (CommentOwnerOrReadOnly,
                                     PostOwnerOrReadOnly, ReportOwnerOrReadOnly)
 from blog_posts.serializer import (CommentSerializer, PostSerializer,
                                    ReportSerializer, VoteSerializer)
-from blog_posts.utils import vaidate_report_status, DynamicSearchFilter
-
+from blog_posts.utils import DynamicSearchFilter, vaidate_report_status
 
 
 # Create your views here.

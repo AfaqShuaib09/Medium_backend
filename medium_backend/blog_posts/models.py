@@ -1,13 +1,16 @@
 """ Models declaration for the blog_posts api """
 from django.contrib.auth.models import User
 from django.db import models
+from django_extensions.db.models import TimeStampedModel
 
 from blog_posts.constant import REPORT_CHOICES, STATUS_CHOICES
 
 
 # Create your models here.
-class Post(models.Model):
-    """ Blog Post Model """
+class Post(TimeStampedModel):
+    """
+    Blog Post Model
+    """
     posted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts', editable=False)
     title = models.CharField(max_length=100)
     content = models.TextField()
@@ -17,11 +20,15 @@ class Post(models.Model):
     isBlocked = models.BooleanField(default=False)
 
     def __str__(self):
-        """ Overrides the str method to return the title of the post """
+        """
+        Overrides the str method to return the title of the post
+        """
         return f'Post: {self.title}'
 
     class Meta:
-        """ Meta class defined to set the ordering of the posts """
+        """
+        Meta class defined to set the ordering of the posts
+        """
         ordering = ['-created_at']
 
     @property
@@ -59,24 +66,31 @@ class Post(models.Model):
         """
         Performs Unvote Action
         """
-        vote, created = self.post_votes.get_or_create(user=user, post=self)
-        if not created:
+        vote = self.post_votes.filter(user=user, post=self)
+        if not vote:
+            return 'You have not voted this post'
+        else:
             vote.delete()
             return 'Successfully unvoted this post'
-        return 'You have not voted this post'
 
 
-class Tag(models.Model):
-    """ Model to store the tags """
+class Tag(TimeStampedModel):
+    """
+    Model to store the tags
+    """
     name = models.CharField(max_length=20)
 
     def __str__(self):
-        """ display the name of the tag """
+        """
+        display the name of the tag
+        """
         return f'{self.name}'
 
 
-class AssignedTag(models.Model):
-    """ Model to store the tags associated with the post """
+class AssignedTag(TimeStampedModel):
+    """
+    Model to store the tags associated with the post
+    """
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='assigned_tags')
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name='assigned_tags')
 
@@ -84,8 +98,10 @@ class AssignedTag(models.Model):
         return f'{self.post.title} - {self.tag.name}'
 
 
-class Comment(models.Model):
-    """ Model to save data of Comments on Blog Posts."""
+class Comment(TimeStampedModel):
+    """
+    Model to save data of Comments on Blog Posts
+    """
     parent = models.ForeignKey('self', blank=True, null=True, related_name='reply', on_delete=models.CASCADE)
     post = models.ForeignKey(Post, related_name='comment', on_delete=models.CASCADE)
     content = models.TextField(max_length=50000)
@@ -103,12 +119,22 @@ class Comment(models.Model):
 
     @property
     def is_parent(self):
-        """ Checks whether a Comment is a Parent Comment. """
+        """
+        Checks whether a Comment is a Parent Comment
+        """
         return False if self.parent else True
+    
+    def __str__(self):
+        """
+        Overrides the str method to return the content of the comment
+        """
+        return f'Comment: {self.content[:20]}'
 
 
-class Report(models.Model):
-    """ Model to store complaints/reports on posts. """
+class Report(TimeStampedModel):
+    """
+    Model to store complaints/reports on posts
+    """
     type = models.CharField(max_length=50, choices=REPORT_CHOICES, default='spam')
     post = models.ForeignKey(Post, related_name='reports', on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
@@ -126,8 +152,10 @@ class Report(models.Model):
         unique_together = ('post', 'reported_by')
 
 
-class Vote(models.Model):
-    """ Model to save data of Votes on Blog Posts. """
+class Vote(TimeStampedModel):
+    """
+    Model to save data of Votes on Blog Posts
+    """
     u_vote = models.BooleanField(default=False)
     user = models.ForeignKey(User, related_name='user_votes', on_delete=models.CASCADE)
     post = models.ForeignKey(Post, related_name='post_votes', on_delete=models.CASCADE)

@@ -1,4 +1,3 @@
-from curses import keyname
 from blog_posts.models import AssignedTag, Comment, Post, Report, Vote
 from blog_posts.tests.constants import (TEST_LOGIN_CREDENTIALS,
                                         TEST_POST_DATA_1, TEST_POST_DATA_2,
@@ -6,13 +5,15 @@ from blog_posts.tests.constants import (TEST_LOGIN_CREDENTIALS,
                                         TEST_UPDATE_POST_DATA_2,
                                         TEST_UPDATE_POST_DATA_3,
                                         TEST_USER_DATA)
+from blog_posts.tests.factories import (AssignedTagFactory, CommentFactory,
+                                        PostFactory, ReportFactory, TagFactory,
+                                        VoteFactory)
 from blog_posts.views import ReviewReportViewSet
 from django.contrib.auth.models import User
-from user_accounts.tests.test_factories import UserFactory
-from blog_posts.tests.test_factories import PostFactory, TagFactory, AssignedTagFactory, VoteFatory, CommentFactory, ReportFactory
 from knox.models import AuthToken
 from rest_framework import status
 from rest_framework.test import APIClient, APIRequestFactory, APITestCase
+from user_accounts.tests.factories import UserFactory
 
 
 # Create your tests here.
@@ -205,7 +206,7 @@ class PostTest(APITestCase):
         response = self.client.get(f'/api/posts/{post.id}/upvote/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data == 'Successfully up voted this post'
-        assert str(VoteFatory(post=post, user=self.user)) == f'vote: {self.user.username} - {post.title}'
+        assert str(VoteFactory(post=post, user=self.user)) == f'vote: {self.user.username} - {post.title}'
 
     def test_post_upvote_already_upvoted(self):
         """ Test to check post already upvoted """
