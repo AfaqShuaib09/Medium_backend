@@ -152,4 +152,10 @@ JAZZMIN_SETTINGS={
     "site_header": "Medium Admin",
     "site_brand": "Medium Admin",
     "order_with_respect_to": ["auth", "user_accounts", "blog_posts"],
+    "search_model": "auth.User",
+    "topmenu_links": [
+        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"model": "auth.User"},
+        {"name": "Search", "search": True, "permissions": ["auth.view_user"]},
+    ],        
 }
