@@ -157,5 +157,8 @@ JAZZMIN_SETTINGS={
         {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
         {"model": "auth.User"},
         {"name": "Search", "search": True, "permissions": ["auth.view_user"]},
-    ],        
+    ],
+    
+    "welcome_sign": "Welcome to the Medium Admin",
+    "copyright": "Medium 2.0",
 }
