@@ -27,7 +27,20 @@ SECRET_KEY = 'django-insecure-z#*=_9qsdsw*69eh!4zs9@e#kt%jx2a2z-6puy4t+6=x^le(%*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
+# communicate with localhost
+CORS_ALLOW_ORIGIN = [
+    "http://localhost:3000",
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Application definition
@@ -47,11 +60,13 @@ INSTALLED_APPS = [
     'django_extensions',
     'drf_yasg',
     'knox',
+    'corsheaders',
     'user_accounts',
     'blog_posts',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -144,7 +159,7 @@ REST_FRAMEWORK = {
 }
 
 REST_KNOX = {
-    'TOKEN_TTL': timedelta(hours=2),  # default time 2h
+    'TOKEN_TTL': timedelta(hours=12),  # default time 12h
 }
 
 JAZZMIN_SETTINGS={

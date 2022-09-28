@@ -4,7 +4,7 @@ from knox import views as knox_views
 from rest_framework.routers import DefaultRouter
 
 from user_accounts.views import (ChangePasswordViewSet, LoginViewSet,
-                                 ProfileViewSet, RegisterViewSet, UserViewSet)
+                                 ProfileViewSet, RegisterViewSet, UserViewSet, SuggestionViewSet)
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='users')
@@ -12,6 +12,8 @@ router.register(r'register', RegisterViewSet, basename='register')
 router.register(r'login', LoginViewSet, basename='login')
 router.register(r'change-password', ChangePasswordViewSet, basename='change-password')
 router.register(r'profile', ProfileViewSet, basename='profile')
+router.register(r'user-suggestion', SuggestionViewSet, basename='user-suggestion')
+
 
 urlpatterns = [
     path('', include(router.urls)),
