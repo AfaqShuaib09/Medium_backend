@@ -27,12 +27,26 @@ SECRET_KEY = 'django-insecure-z#*=_9qsdsw*69eh!4zs9@e#kt%jx2a2z-6puy4t+6=x^le(%*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
+# communicate with localhost
+CORS_ALLOW_ORIGIN = [
+    "http://localhost:3000",
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -46,11 +60,13 @@ INSTALLED_APPS = [
     'django_extensions',
     'drf_yasg',
     'knox',
+    'corsheaders',
     'user_accounts',
     'blog_posts',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -128,7 +144,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR,"media")
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -136,11 +153,27 @@ MEDIA_ROOT = os.path.join(BASE_DIR,"media")
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
-   'DEFAULT_AUTHENTICATION_CLASSES': (
-         'knox.auth.TokenAuthentication',
-   ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'knox.auth.TokenAuthentication',
+    ),
 }
 
 REST_KNOX = {
-       'TOKEN_TTL': timedelta(hours=2),  # default time 2h
+    'TOKEN_TTL': timedelta(hours=12),  # default time 12h
+}
+
+JAZZMIN_SETTINGS={
+    "site_title": "Medium Admin",
+    "site_header": "Medium Admin",
+    "site_brand": "Medium Admin",
+    "order_with_respect_to": ["auth", "user_accounts", "blog_posts"],
+    "search_model": "auth.User",
+    "topmenu_links": [
+        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"model": "auth.User"},
+        {"name": "Search", "search": True, "permissions": ["auth.view_user"]},
+    ],
+    
+    "welcome_sign": "Welcome to the Medium Admin",
+    "copyright": "Medium 2.0",
 }

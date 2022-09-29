@@ -17,6 +17,10 @@ class Post(TimeStampedModel):
     def __str__(self):
         """ Overrides the str method to return the title of the post """
         return f'{self.title}'
+    
+    class Meta:
+        """ Meta subclass to define ordering. """
+        ordering = ['-created']
 
     @property
     def total_votes(self):

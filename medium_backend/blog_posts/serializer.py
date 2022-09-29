@@ -74,9 +74,10 @@ class PostSerializer(serializers.ModelSerializer):
                     'total_votes' ,'created', 'modified']
         read_only_fields = ('posted_by', 'assigned_tags', 'total_votes', 'created', 'modified')
         extra_kwargs = {
-            'created_at': {'read_only': True},
-            'updated_at': {'read_only': True},
+            'created': {'read_only': True},
+            'modified': {'read_only': True},
         }
+
 
     def to_representation(self, instance):
         ''' Overrides the default representation of a model instance. '''
@@ -85,6 +86,7 @@ class PostSerializer(serializers.ModelSerializer):
             'id': instance.posted_by.id,
             'username': instance.posted_by.username,
             'email': instance.posted_by.email,
+            'profile_pic': instance.posted_by.profile.profile_pic.url
         }
         representation['assigned_tags'] = [
             {'id': tag.tag.id, 'name': tag.tag.name} for tag in instance.assigned_tags.all()

@@ -156,3 +156,24 @@ class ProfileViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+# get suggestions for users to follow
+class SuggestionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    """
+    API endpoint that allows users to be viewed, created, updated or deleted.
+    """
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get']
+    
+    def list(self, request, *args, **kwargs):
+        """
+        Return a list of all the users.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        queryset = queryset.exclude(user__username=request.user.username)
+        queryset = queryset.exclude(user__username='admin')
+        queryset = queryset.order_by('?')[:5]
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
