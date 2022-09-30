@@ -18,7 +18,19 @@ class ReplySerializer(serializers.ModelSerializer):
         """
         model = Comment
         fields = ['parent', 'id', 'content', 'owner', 'created', 'modified']
-
+    
+    def to_representation(self, instance):
+        """
+        Overriding to_representation method to add custom field.
+        """
+        representation = super().to_representation(instance)
+        representation['owner'] = {
+            'id': instance.owner.id, 'username': instance.owner.username, 'email': instance.owner.email,
+            'profile_pic': instance.owner.profile.profile_pic.url
+        }
+        return representation
+        
+        
 class CommentSerializer(serializers.ModelSerializer):
     """
     Serializes the data of a comment.
@@ -61,6 +73,10 @@ class CommentSerializer(serializers.ModelSerializer):
         representation['parent'] = instance.parent.id if instance.parent else None
         representation['post'] = {
             'id': instance.post.id, 'title': instance.post.title
+        }
+        representation['owner'] = {
+            'id': instance.owner.id, 'username': instance.owner.username, 'email': instance.owner.email,
+            'profile_pic': instance.owner.profile.profile_pic.url
         }
         return representation
 
