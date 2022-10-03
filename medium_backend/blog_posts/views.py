@@ -23,6 +23,12 @@ class PostViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, PostOwnerOrReadOnly]
     lookup_field = 'pk'
 
+    # asign permission to the action
+    def get_permissions(self):
+        """ Allow list-all users only to admin users. """
+        return () if self.action == 'list' else (IsAuthenticated(), PostOwnerOrReadOnly())
+
+
     def create(self, request, *args, **kwargs):
         ''' Create a new post associated with the user. '''
         # if some field is missing, return error
@@ -89,6 +95,26 @@ class PostViewSet(viewsets.ModelViewSet):
         """ Fires Unvote Action """
         post = self.get_object()
         return Response(post.unvote(request.user))
+
+
+class PopularPostsViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    """
+    API endpoint that allows users to be viewed, created, updated or deleted.
+    """
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get']
+    
+    def list(self, request, *args, **kwargs):
+        """
+        Return a list of all the users.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        # sort the queryset by the property total_votes and return the first 3
+        queryset = sorted(queryset, key=lambda post: post.total_votes, reverse=True)[:3]
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class CommentViewSet(viewsets.ModelViewSet):

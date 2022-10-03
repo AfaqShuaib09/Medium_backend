@@ -18,7 +18,19 @@ class ReplySerializer(serializers.ModelSerializer):
         """
         model = Comment
         fields = ['parent', 'id', 'content', 'owner', 'created', 'modified']
-
+    
+    def to_representation(self, instance):
+        """
+        Overriding to_representation method to add custom field.
+        """
+        representation = super().to_representation(instance)
+        representation['owner'] = {
+            'id': instance.owner.id, 'username': instance.owner.username, 'email': instance.owner.email,
+            'profile_pic': instance.owner.profile.profile_pic.url
+        }
+        return representation
+        
+        
 class CommentSerializer(serializers.ModelSerializer):
     """
     Serializes the data of a comment.
@@ -62,6 +74,10 @@ class CommentSerializer(serializers.ModelSerializer):
         representation['post'] = {
             'id': instance.post.id, 'title': instance.post.title
         }
+        representation['owner'] = {
+            'id': instance.owner.id, 'username': instance.owner.username, 'email': instance.owner.email,
+            'profile_pic': instance.owner.profile.profile_pic.url
+        }
         return representation
 
 
@@ -74,9 +90,10 @@ class PostSerializer(serializers.ModelSerializer):
                     'total_votes' ,'created', 'modified']
         read_only_fields = ('posted_by', 'assigned_tags', 'total_votes', 'created', 'modified')
         extra_kwargs = {
-            'created_at': {'read_only': True},
-            'updated_at': {'read_only': True},
+            'created': {'read_only': True},
+            'modified': {'read_only': True},
         }
+
 
     def to_representation(self, instance):
         ''' Overrides the default representation of a model instance. '''
@@ -85,6 +102,7 @@ class PostSerializer(serializers.ModelSerializer):
             'id': instance.posted_by.id,
             'username': instance.posted_by.username,
             'email': instance.posted_by.email,
+            'profile_pic': instance.posted_by.profile.profile_pic.url
         }
         representation['assigned_tags'] = [
             {'id': tag.tag.id, 'name': tag.tag.name} for tag in instance.assigned_tags.all()
